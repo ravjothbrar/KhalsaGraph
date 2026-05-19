@@ -5,36 +5,35 @@ import { semanticSearch } from '../services/semanticSearch';
 import { getRaagColor } from '../constants/raagColors';
 
 export default function SearchBar() {
-  const [tab, setTab] = useState('keyword');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [open, setOpen] = useState(false);
   const [semanticStatus, setSemanticStatus] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState('keyword'); // 'keyword' | 'semantic'
 
   const nodes = useStore(s => s.nodes);
   const setSelectedNode = useStore(s => s.setSelectedNode);
   const debounceRef = useRef(null);
   const inputRef = useRef(null);
 
-  const resolveNodes = useCallback((ids) => {
-    return ids.map(id => nodes.find(n => n.id === id)).filter(Boolean);
-  }, [nodes]);
+  const resolveNodes = useCallback((ids) =>
+    ids.map(id => nodes.find(n => n.id === id)).filter(Boolean), [nodes]);
 
-  const handleKeyword = useCallback((q) => {
-    if (!q.trim()) { setResults([]); return; }
+  const runKeyword = useCallback((q) => {
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
-      const ids = await keywordSearch(q, 10);
+      const ids = await keywordSearch(q, 8);
       setResults(resolveNodes(ids));
+      setOpen(true);
     }, 150);
   }, [resolveNodes]);
 
-  const handleSemantic = useCallback(async (q) => {
-    if (!q.trim()) { setResults([]); return; }
+  const runSemantic = useCallback(async (q) => {
     setLoading(true);
+    setOpen(true);
     try {
-      const res = await semanticSearch(q, nodes, 10, (msg) => setSemanticStatus(msg));
+      const res = await semanticSearch(q, nodes, 8, (msg) => setSemanticStatus(msg));
       setResults(res.filter(Boolean));
     } catch (e) {
       setSemanticStatus('Error: ' + e.message);
@@ -47,13 +46,16 @@ export default function SearchBar() {
   const handleInput = (e) => {
     const q = e.target.value;
     setQuery(q);
-    setOpen(true);
-    if (tab === 'keyword') handleKeyword(q);
+    if (!q.trim()) { setResults([]); setOpen(false); return; }
+    if (mode === 'keyword') runKeyword(q);
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (tab === 'semantic') handleSemantic(query);
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && query.trim()) {
+      if (mode === 'semantic') runSemantic(query);
+      else if (results.length > 0) handleSelect(results[0]);
+    }
+    if (e.key === 'Escape') { setOpen(false); inputRef.current?.blur(); }
   };
 
   const handleSelect = (node) => {
@@ -68,87 +70,76 @@ export default function SearchBar() {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         inputRef.current?.focus();
+        setOpen(true);
       }
-      if (e.key === 'Escape') { setOpen(false); inputRef.current?.blur(); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-30 w-full max-w-xl px-4">
-      <div className="glass rounded-2xl overflow-hidden shadow-2xl">
-        {/* Tabs */}
-        <div className="flex border-b border-white/10">
-          {['keyword', 'semantic'].map(t => (
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-30 w-full max-w-lg px-4">
+      <div className="glass rounded-2xl shadow-2xl overflow-visible" style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.5)' }}>
+        <div className="flex items-center px-4 py-3 gap-3">
+          {/* Mode toggle */}
+          <div className="nav-pill flex-shrink-0">
             <button
-              key={t}
-              onClick={() => { setTab(t); setResults([]); setQuery(''); }}
-              className={`flex-1 py-2 text-xs font-medium uppercase tracking-wider transition-colors ${
-                tab === t ? 'text-indigo-400 border-b-2 border-indigo-400' : 'text-slate-500 hover:text-slate-300'
-              }`}
-            >
-              {t === 'keyword' ? '⚡ Keyword' : '✦ Semantic'}
-            </button>
-          ))}
-        </div>
+              className={mode === 'keyword' ? 'active' : ''}
+              onClick={() => { setMode('keyword'); setResults([]); }}
+            >⚡</button>
+            <button
+              className={mode === 'semantic' ? 'active' : ''}
+              onClick={() => { setMode('semantic'); setResults([]); }}
+            >✦</button>
+          </div>
 
-        {/* Input */}
-        <form onSubmit={handleSearch} className="flex items-center px-4 py-3 gap-3">
-          <span className="text-slate-500">🔍</span>
           <input
             ref={inputRef}
             value={query}
             onChange={handleInput}
+            onKeyDown={handleKeyDown}
             onFocus={() => results.length && setOpen(true)}
-            placeholder={tab === 'keyword'
-              ? 'Search Gurbani, raag, virtue… (⌘K)'
-              : 'Describe a feeling or concept…'}
-            className="flex-1 bg-transparent text-white placeholder-slate-500 outline-none text-sm"
+            placeholder={mode === 'keyword' ? 'Search Gurbani, raag, virtue…' : 'Describe a feeling or concept…'}
+            className="flex-1 bg-transparent text-white placeholder-slate-600 outline-none text-sm min-w-0"
           />
-          {tab === 'semantic' && (
+
+          {mode === 'semantic' && query.trim() && (
             <button
-              type="submit"
-              disabled={loading || !query.trim()}
-              className="text-xs px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white transition-colors"
+              onClick={() => runSemantic(query)}
+              disabled={loading}
+              className="flex-shrink-0 text-xs px-2.5 py-1 rounded-lg bg-accent/15 hover:bg-accent/25 text-accent transition-colors disabled:opacity-40"
             >
-              {loading ? '…' : 'Search'}
+              {loading ? '…' : 'Go'}
             </button>
           )}
-          {query && (
-            <button type="button" onClick={() => { setQuery(''); setResults([]); setOpen(false); }}
-              className="text-slate-500 hover:text-white text-xs">✕</button>
-          )}
-        </form>
 
-        {/* Semantic status */}
+          {query && (
+            <button onClick={() => { setQuery(''); setResults([]); setOpen(false); }}
+              className="flex-shrink-0 text-slate-600 hover:text-slate-400 text-xs w-4 text-center">✕</button>
+          )}
+        </div>
+
+        {/* Status */}
         {semanticStatus && (
-          <div className="px-4 pb-2 text-xs text-indigo-300 flex items-center gap-2">
-            <span className="animate-spin">⟳</span> {semanticStatus}
+          <div className="px-4 pb-2.5 text-xs text-accent/70 flex items-center gap-2 border-t border-white/5">
+            <span className="inline-block animate-spin">⟳</span> {semanticStatus}
           </div>
         )}
 
-        {/* Results dropdown */}
+        {/* Results */}
         {open && results.length > 0 && (
-          <div className="border-t border-white/10 max-h-72 overflow-y-auto">
+          <div className="border-t border-white/5 max-h-64 overflow-y-auto rounded-b-2xl">
             {results.map(node => (
-              <button
-                key={node.id}
-                onClick={() => handleSelect(node)}
-                className="w-full text-left px-4 py-3 hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
-              >
-                <div className="text-sm text-white truncate">{node.english || node.transliteration}</div>
+              <button key={node.id} onClick={() => handleSelect(node)}
+                className="w-full text-left px-4 py-3 hover:bg-white/5 transition-colors border-b border-white/5 last:border-0">
+                <div className="text-sm text-slate-200 truncate">{node.english}</div>
                 <div className="flex gap-2 mt-1 flex-wrap">
-                  <span
-                    className="text-xs px-2 py-0.5 rounded-full"
-                    style={{ background: getRaagColor(node.raagSlug) + '33', color: getRaagColor(node.raagSlug) }}
-                  >
+                  <span className="text-xs px-1.5 py-0.5 rounded-full"
+                    style={{ background: getRaagColor(node.raagSlug)+'22', color: getRaagColor(node.raagSlug) }}>
                     {node.raag}
                   </span>
                   {(node.tags || []).slice(0, 2).map(tag => (
-                    <span key={tag} className="text-xs px-2 py-0.5 rounded-full bg-slate-700 text-slate-300">
-                      {tag}
-                    </span>
+                    <span key={tag} className="text-xs px-1.5 py-0.5 rounded-full bg-white/5 text-slate-400">{tag}</span>
                   ))}
                 </div>
               </button>

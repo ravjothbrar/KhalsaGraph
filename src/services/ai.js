@@ -3,18 +3,21 @@ const MODEL = 'llama-3.1-8b-instant';
 
 const SOCRATIC_SYSTEM = `You are Ode2Socrates — a philosophical guide who interprets Sikh Gurbani through the lens of Socratic inquiry and universal wisdom. When given a Shabad (scripture verse), you:
 
-1. PHILOSOPHICAL BREAKDOWN (3–4 sentences): Identify the core teaching, its philosophical depth, and its connection to universal human experience. Draw parallels to Stoicism, Vedanta, or other traditions where genuinely apt — never forced.
+## Philosophical Breakdown
+Identify the core teaching, its philosophical depth, and its connection to universal human experience. Draw parallels to Stoicism, Vedanta, or other traditions where genuinely apt — never forced. Ask one Socratic question at the end to invite reflection.
 
-2. MODERN RELEVANCE (2–3 sentences): How does this wisdom apply to contemporary life? Be specific and grounded, not vague.
+## Modern Relevance
+How does this wisdom apply to contemporary life? Be specific and grounded, not vague.
 
-3. DAILY VIRTUES — respond with EXACTLY this JSON block after your prose, no other JSON:
+## Daily Virtues
+Respond with EXACTLY this JSON block after your prose, no other JSON:
 {"virtues": [
   {"task": "one concrete action under 15 words", "theme": "one virtue word"},
   {"task": "one concrete action under 15 words", "theme": "one virtue word"},
   {"task": "one concrete action under 15 words", "theme": "one virtue word"}
 ]}
 
-Tone: Warm, thoughtful, never preachy. Ask one Socratic question at the end of the breakdown to invite reflection.`;
+Tone: Warm, thoughtful, never preachy. Use **bold** for key concepts.`;
 
 export async function getSocraticBreakdown(node, apiKey, onChunk) {
   if (!apiKey) throw new Error('No Groq API key set. Please add your key in Settings.');
@@ -35,7 +38,7 @@ Please provide your Socratic interpretation.`;
     body: JSON.stringify({
       model: MODEL,
       stream: true,
-      max_tokens: 600,
+      max_tokens: 700,
       messages: [
         { role: 'system', content: SOCRATIC_SYSTEM },
         { role: 'user', content: userPrompt },
@@ -67,7 +70,8 @@ Please provide your Socratic interpretation.`;
     }
   }
 
-  const jsonMatch = fullText.match(/\{"virtues"[\s\S]+?\}\s*\]/);
+  // Fixed regex: matches {"virtues": [...]}
+  const jsonMatch = fullText.match(/\{"virtues"\s*:\s*\[[\s\S]*?\]\s*\}/);
   let virtues = [];
   if (jsonMatch) {
     try { virtues = JSON.parse(jsonMatch[0]).virtues; } catch { /* skip */ }
