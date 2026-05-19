@@ -3,7 +3,7 @@ import ForceGraph2D from 'react-force-graph-2d';
 import { useStore } from '../store/useStore';
 import { getRaagColor } from '../constants/raagColors';
 
-const MOOD_RADIUS = { serene: 5, devotional: 7, contemplative: 6, joyful: 8, sorrowful: 5 };
+const MOOD_RADIUS = { serene: 4, devotional: 6, contemplative: 5, joyful: 7, sorrowful: 4 };
 
 export default function Graph({ dimmed = false }) {
   const graphRef = useRef(null);
@@ -17,7 +17,7 @@ export default function Graph({ dimmed = false }) {
 
   const [hoveredNode, setHoveredNode] = useState(null);
   const [dims, setDims] = useState({ w: window.innerWidth, h: window.innerHeight });
-  const [zoom, setZoom] = useState(1);
+  const [currentZoom, setCurrentZoom] = useState(1);
 
   useEffect(() => {
     const onResize = () => setDims({ w: window.innerWidth, h: window.innerHeight });
@@ -25,19 +25,11 @@ export default function Graph({ dimmed = false }) {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  useEffect(() => {
-    if (!graphRef.current || !physicsEnabled) return;
-    const timer = setTimeout(() => {
-      try { graphRef.current?.d3Force('charge')?.strength(0); } catch {}
-    }, 5000);
-    return () => clearTimeout(timer);
-  }, [nodes, physicsEnabled]);
-
   const handleNodeClick = useCallback((node) => {
     setSelectedNode(node);
     if (graphRef.current) {
-      graphRef.current.centerAt(node.x, node.y, 700);
-      graphRef.current.zoom(5, 700);
+      graphRef.current.centerAt(node.x, node.y, 600);
+      graphRef.current.zoom(5, 600);
     }
   }, [setSelectedNode]);
 
@@ -45,15 +37,24 @@ export default function Graph({ dimmed = false }) {
     if (!isFinite(node.x) || !isFinite(node.y)) return;
 
     const color = getRaagColor(node.raagSlug);
-    const baseR = MOOD_RADIUS[node.mood] || 6;
+    const baseR = MOOD_RADIUS[node.mood] || 5;
     const isSelected = selectedNode?.id === node.id;
     const isHovered = hoveredNode?.id === node.id;
-    const r = isSelected ? baseR * 1.7 : isHovered ? baseR * 1.3 : baseR;
+    const r = isSelected ? baseR * 1.8 : isHovered ? baseR * 1.3 : baseR;
 
-    // Outer glow
-    const glowR = r * 2.8;
-    const gradient = ctx.createRadialGradient(node.x, node.y, r * 0.3, node.x, node.y, glowR);
-    gradient.addColorStop(0, color + 'aa');
+    // Skip expensive glow at low zoom — just draw a solid dot
+    if (globalScale < 0.8) {
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, r * 0.7, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      return;
+    }
+
+    // Glow at normal zoom
+    const glowR = r * 2.5;
+    const gradient = ctx.createRadialGradient(node.x, node.y, r * 0.2, node.x, node.y, glowR);
+    gradient.addColorStop(0, color + '99');
     gradient.addColorStop(1, color + '00');
     ctx.beginPath();
     ctx.arc(node.x, node.y, glowR, 0, Math.PI * 2);
@@ -69,74 +70,77 @@ export default function Graph({ dimmed = false }) {
     // Selected ring
     if (isSelected) {
       ctx.beginPath();
-      ctx.arc(node.x, node.y, r + 3, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+      ctx.arc(node.x, node.y, r + 2.5 / globalScale, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.8)';
       ctx.lineWidth = 1.5 / globalScale;
       ctx.stroke();
     }
 
-    // Node text on zoom
-    const textZoom = 4;
-    if (globalScale > textZoom) {
-      const fade = Math.min(1, (globalScale - textZoom) / 2);
-      const text = textMode === 'gurmukhi'
-        ? (node.gurmukhi || '').slice(0, 40)
-        : textMode === 'transliteration'
-        ? (node.transliteration || '').slice(0, 40)
-        : (node.english || '').slice(0, 45);
+    // Text on zoom
+    if (globalScale > 4) {
+      const fade = Math.min(1, (globalScale - 4) / 2);
+      const rawText = textMode === 'gurmukhi'
+        ? node.gurmukhi : textMode === 'transliteration'
+        ? node.transliteration || node.english : node.english;
+
+      // Show first sentence / first ~60 chars
+      const text = (rawText || '').split(/[.।॥]/)[0].trim().slice(0, 60)
+        + ((rawText || '').length > 60 ? '…' : '');
 
       if (text) {
-        const fontSize = 9 / globalScale;
-        ctx.font = `${fontSize}px Inter, sans-serif`;
-        ctx.globalAlpha = fade * 0.9;
+        const fs = 8 / globalScale;
+        ctx.font = `${fs}px Inter, sans-serif`;
+        ctx.globalAlpha = fade;
         ctx.textAlign = 'center';
 
-        // Background pill
         const tw = ctx.measureText(text).width;
-        const ph = fontSize * 1.6;
-        const pw = tw + fontSize * 1.2;
-        const py = node.y + r + fontSize * 1.4;
-        ctx.fillStyle = 'rgba(6,11,24,0.85)';
+        const ph = fs * 1.8, pw = tw + fs * 1.4;
+        const py = node.y + r + fs * 1.6;
+
+        ctx.fillStyle = 'rgba(6,11,24,0.88)';
         ctx.beginPath();
-        ctx.roundRect(node.x - pw / 2, py - ph / 2, pw, ph, fontSize * 0.3);
+        ctx.roundRect(node.x - pw/2, py - ph/2, pw, ph, fs * 0.3);
         ctx.fill();
 
-        ctx.fillStyle = '#E8EDF5';
-        ctx.fillText(text, node.x, py + fontSize * 0.35);
+        ctx.fillStyle = '#CBD5E1';
+        ctx.fillText(text, node.x, py + fs * 0.35);
         ctx.globalAlpha = 1;
       }
     } else if (globalScale > 2.5 && (isSelected || isHovered)) {
-      // Show writer name at medium zoom for selected/hovered
-      const label = (node.writer || '').replace(' Ji', '');
-      ctx.font = `${8 / globalScale}px Inter, sans-serif`;
-      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      const label = (node.writer || '').replace(' Ji', '').replace('Guru ', '');
+      const fs = 7 / globalScale;
+      ctx.font = `${fs}px Inter, sans-serif`;
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
       ctx.textAlign = 'center';
-      ctx.globalAlpha = 0.8;
-      ctx.fillText(label, node.x, node.y + r + 10 / globalScale);
+      ctx.globalAlpha = 0.7;
+      ctx.fillText(label, node.x, node.y + r + 9 / globalScale);
       ctx.globalAlpha = 1;
     }
   }, [selectedNode, hoveredNode, textMode]);
 
-  const linkCanvasObject = useCallback((link, ctx) => {
+  const linkCanvasObject = useCallback((link, ctx, globalScale) => {
+    // Skip link rendering at very low zoom (performance)
+    if (globalScale < 0.3) return;
+
     const src = typeof link.source === 'object' ? link.source : null;
     const tgt = typeof link.target === 'object' ? link.target : null;
     if (!src || !tgt) return;
     if (!isFinite(src.x) || !isFinite(src.y) || !isFinite(tgt.x) || !isFinite(tgt.y)) return;
 
-    const srcId = src.id, tgtId = tgt.id;
-    const srcBc = breadcrumb.indexOf(srcId);
-    const tgtBc = breadcrumb.indexOf(tgtId);
+    const srcBc = breadcrumb.indexOf(src.id);
+    const tgtBc = breadcrumb.indexOf(tgt.id);
     const isBreadcrumb = srcBc !== -1 && tgtBc !== -1 && Math.abs(srcBc - tgtBc) === 1;
 
     ctx.beginPath();
     ctx.moveTo(src.x, src.y);
     ctx.lineTo(tgt.x, tgt.y);
     if (isBreadcrumb) {
-      ctx.strokeStyle = 'rgba(249,115,22,0.35)';
-      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = 'rgba(249,115,22,0.4)';
+      ctx.lineWidth = 1.2;
     } else {
-      ctx.strokeStyle = `rgba(90,112,144,${(link.strength || 0.3) * 0.25})`;
-      ctx.lineWidth = 0.5;
+      const alpha = Math.min(0.18, (link.strength || 0.3) * 0.2) * Math.min(1, globalScale * 2);
+      ctx.strokeStyle = `rgba(90,112,144,${alpha})`;
+      ctx.lineWidth = 0.4;
     }
     ctx.stroke();
   }, [breadcrumb]);
@@ -147,7 +151,7 @@ export default function Graph({ dimmed = false }) {
   };
 
   return (
-    <div style={{ opacity: dimmed ? 0.15 : 1, transition: 'opacity 0.5s', filter: dimmed ? 'blur(2px)' : 'none' }}>
+    <div style={{ opacity: dimmed ? 0.12 : 1, transition: 'opacity 0.6s', filter: dimmed ? 'blur(3px) saturate(0.5)' : 'none' }}>
       {nodes.length > 0 ? (
         <ForceGraph2D
           ref={graphRef}
@@ -162,10 +166,13 @@ export default function Graph({ dimmed = false }) {
           onNodeClick={handleNodeClick}
           onNodeHover={setHoveredNode}
           onBackgroundClick={() => setSelectedNode(null)}
-          onZoom={({ k }) => setZoom(k)}
-          cooldownTicks={physicsEnabled ? 300 : 0}
-          d3AlphaDecay={0.025}
-          d3VelocityDecay={0.35}
+          onZoom={({ k }) => setCurrentZoom(k)}
+          // Pre-run physics, then freeze — no ongoing simulation = no CPU drain
+          warmupTicks={200}
+          cooldownTicks={50}
+          cooldownTime={2000}
+          d3AlphaDecay={0.04}
+          d3VelocityDecay={0.4}
           nodeRelSize={1}
           enableNodeDrag={!dimmed}
           enableZoomInteraction={!dimmed}
@@ -173,7 +180,7 @@ export default function Graph({ dimmed = false }) {
           maxZoom={16}
         />
       ) : (
-        <div className="flex items-center justify-center w-full h-screen" style={{ background: '#060B18' }} />
+        <div style={{ width: '100vw', height: '100vh', background: '#060B18' }} />
       )}
     </div>
   );

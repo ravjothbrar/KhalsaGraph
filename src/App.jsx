@@ -99,6 +99,16 @@ export default function App() {
                 ))}
               </div>
 
+              {/* Creator pill */}
+              <a href="https://ravjothbrar.com/" target="_blank" rel="noopener noreferrer"
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all hover:scale-105"
+                style={{ border:'1px solid rgba(139,92,246,0.35)', background:'rgba(139,92,246,0.08)', color:'#a78bfa' }}>
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor">
+                  <circle cx="6" cy="4" r="2.5"/><path d="M1.5 10.5c0-2.485 2.015-4.5 4.5-4.5s4.5 2.015 4.5 4.5"/>
+                </svg>
+                Ravjoth Brar
+              </a>
+
               {/* Settings */}
               <button
                 onClick={() => setSettingsOpen(!settingsOpen)}
