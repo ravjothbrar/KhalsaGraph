@@ -5,28 +5,7 @@ import { getRaagColor } from '../constants/raagColors';
 
 const MOOD_RADIUS = { serene: 5, devotional: 7, contemplative: 6, joyful: 8, sorrowful: 5 };
 
-function drawStars(ctx, width, height) {
-  const stars = [];
-  const seed = 42;
-  for (let i = 0; i < 200; i++) {
-    const x = ((seed * (i * 9301 + 49297) % 233280) / 233280) * width;
-    const y = ((seed * (i * 7919 + 11071) % 233280) / 233280) * height;
-    const r = Math.random() * 1.2 + 0.3;
-    stars.push({ x, y, r });
-  }
-  ctx.save();
-  ctx.fillStyle = '#ffffff';
-  for (const s of stars) {
-    ctx.globalAlpha = Math.random() * 0.5 + 0.2;
-    ctx.beginPath();
-    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-  ctx.restore();
-}
-
-export default function Graph() {
+export default function Graph({ dimmed = false }) {
   const graphRef = useRef(null);
   const nodes = useStore(s => s.nodes);
   const edges = useStore(s => s.edges);
@@ -34,9 +13,11 @@ export default function Graph() {
   const setSelectedNode = useStore(s => s.setSelectedNode);
   const breadcrumb = useStore(s => s.breadcrumb);
   const physicsEnabled = useStore(s => s.physicsEnabled);
+  const textMode = useStore(s => s.textMode);
 
   const [hoveredNode, setHoveredNode] = useState(null);
   const [dims, setDims] = useState({ w: window.innerWidth, h: window.innerHeight });
+  const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
     const onResize = () => setDims({ w: window.innerWidth, h: window.innerHeight });
@@ -44,39 +25,38 @@ export default function Graph() {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  // Freeze simulation after 4 seconds for performance
   useEffect(() => {
     if (!graphRef.current || !physicsEnabled) return;
     const timer = setTimeout(() => {
-      graphRef.current?.d3Force('charge')?.strength(0);
-    }, 4000);
+      try { graphRef.current?.d3Force('charge')?.strength(0); } catch {}
+    }, 5000);
     return () => clearTimeout(timer);
   }, [nodes, physicsEnabled]);
 
   const handleNodeClick = useCallback((node) => {
     setSelectedNode(node);
     if (graphRef.current) {
-      graphRef.current.centerAt(node.x, node.y, 800);
-      graphRef.current.zoom(4, 800);
+      graphRef.current.centerAt(node.x, node.y, 700);
+      graphRef.current.zoom(5, 700);
     }
   }, [setSelectedNode]);
 
   const nodeCanvasObject = useCallback((node, ctx, globalScale) => {
+    if (!isFinite(node.x) || !isFinite(node.y)) return;
+
     const color = getRaagColor(node.raagSlug);
     const baseR = MOOD_RADIUS[node.mood] || 6;
     const isSelected = selectedNode?.id === node.id;
     const isHovered = hoveredNode?.id === node.id;
-    const r = isSelected ? baseR * 1.6 : isHovered ? baseR * 1.25 : baseR;
+    const r = isSelected ? baseR * 1.7 : isHovered ? baseR * 1.3 : baseR;
 
-    // Guard against unpositioned nodes (NaN/undefined during initial layout)
-    if (!isFinite(node.x) || !isFinite(node.y)) return;
-
-    // Glow effect
-    const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, r * 2.5);
-    gradient.addColorStop(0, color + 'cc');
+    // Outer glow
+    const glowR = r * 2.8;
+    const gradient = ctx.createRadialGradient(node.x, node.y, r * 0.3, node.x, node.y, glowR);
+    gradient.addColorStop(0, color + 'aa');
     gradient.addColorStop(1, color + '00');
     ctx.beginPath();
-    ctx.arc(node.x, node.y, r * 2.5, 0, Math.PI * 2);
+    ctx.arc(node.x, node.y, glowR, 0, Math.PI * 2);
     ctx.fillStyle = gradient;
     ctx.fill();
 
@@ -86,62 +66,78 @@ export default function Graph() {
     ctx.fillStyle = color;
     ctx.fill();
 
-    // White ring for selected
+    // Selected ring
     if (isSelected) {
       ctx.beginPath();
-      ctx.arc(node.x, node.y, r + 2, 0, Math.PI * 2);
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.5;
+      ctx.arc(node.x, node.y, r + 3, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+      ctx.lineWidth = 1.5 / globalScale;
       ctx.stroke();
     }
 
-    // Label at high zoom
-    if (globalScale > 3 && node.writer) {
-      const label = node.writer.length > 20 ? node.writer.slice(0, 18) + '…' : node.writer;
-      ctx.font = `${10 / globalScale}px sans-serif`;
-      ctx.fillStyle = 'rgba(255,255,255,0.8)';
-      ctx.textAlign = 'center';
-      ctx.fillText(label, node.x, node.y + r + 8 / globalScale);
-    }
+    // Node text on zoom
+    const textZoom = 4;
+    if (globalScale > textZoom) {
+      const fade = Math.min(1, (globalScale - textZoom) / 2);
+      const text = textMode === 'gurmukhi'
+        ? (node.gurmukhi || '').slice(0, 40)
+        : textMode === 'transliteration'
+        ? (node.transliteration || '').slice(0, 40)
+        : (node.english || '').slice(0, 45);
 
-    // Draw breadcrumb trail lines
-    const bcIdx = breadcrumb.indexOf(node.id);
-    if (bcIdx > 0) {
-      // This is handled in linkCanvasObject for breadcrumb links
+      if (text) {
+        const fontSize = 9 / globalScale;
+        ctx.font = `${fontSize}px Inter, sans-serif`;
+        ctx.globalAlpha = fade * 0.9;
+        ctx.textAlign = 'center';
+
+        // Background pill
+        const tw = ctx.measureText(text).width;
+        const ph = fontSize * 1.6;
+        const pw = tw + fontSize * 1.2;
+        const py = node.y + r + fontSize * 1.4;
+        ctx.fillStyle = 'rgba(6,11,24,0.85)';
+        ctx.beginPath();
+        ctx.roundRect(node.x - pw / 2, py - ph / 2, pw, ph, fontSize * 0.3);
+        ctx.fill();
+
+        ctx.fillStyle = '#E8EDF5';
+        ctx.fillText(text, node.x, py + fontSize * 0.35);
+        ctx.globalAlpha = 1;
+      }
+    } else if (globalScale > 2.5 && (isSelected || isHovered)) {
+      // Show writer name at medium zoom for selected/hovered
+      const label = (node.writer || '').replace(' Ji', '');
+      ctx.font = `${8 / globalScale}px Inter, sans-serif`;
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.textAlign = 'center';
+      ctx.globalAlpha = 0.8;
+      ctx.fillText(label, node.x, node.y + r + 10 / globalScale);
+      ctx.globalAlpha = 1;
     }
-  }, [selectedNode, hoveredNode, breadcrumb]);
+  }, [selectedNode, hoveredNode, textMode]);
 
   const linkCanvasObject = useCallback((link, ctx) => {
-    // Breadcrumb links are drawn in nodeCanvasObject overlay
-    const srcId = typeof link.source === 'object' ? link.source.id : link.source;
-    const tgtId = typeof link.target === 'object' ? link.target.id : link.target;
-    const srcBc = breadcrumb.indexOf(srcId);
-    const tgtBc = breadcrumb.indexOf(tgtId);
-
-    if (srcBc !== -1 && tgtBc !== -1 && Math.abs(srcBc - tgtBc) === 1) {
-      const src = typeof link.source === 'object' ? link.source : null;
-      const tgt = typeof link.target === 'object' ? link.target : null;
-      if (src && tgt) {
-        ctx.beginPath();
-        ctx.moveTo(src.x, src.y);
-        ctx.lineTo(tgt.x, tgt.y);
-        ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        return;
-      }
-    }
-
     const src = typeof link.source === 'object' ? link.source : null;
     const tgt = typeof link.target === 'object' ? link.target : null;
     if (!src || !tgt) return;
     if (!isFinite(src.x) || !isFinite(src.y) || !isFinite(tgt.x) || !isFinite(tgt.y)) return;
 
+    const srcId = src.id, tgtId = tgt.id;
+    const srcBc = breadcrumb.indexOf(srcId);
+    const tgtBc = breadcrumb.indexOf(tgtId);
+    const isBreadcrumb = srcBc !== -1 && tgtBc !== -1 && Math.abs(srcBc - tgtBc) === 1;
+
     ctx.beginPath();
     ctx.moveTo(src.x, src.y);
     ctx.lineTo(tgt.x, tgt.y);
-    ctx.strokeStyle = `rgba(148, 163, 184, ${(link.strength || 0.3) * 0.3})`;
-    ctx.lineWidth = 0.5;
+    if (isBreadcrumb) {
+      ctx.strokeStyle = 'rgba(249,115,22,0.35)';
+      ctx.lineWidth = 1.5;
+    } else {
+      ctx.strokeStyle = `rgba(90,112,144,${(link.strength || 0.3) * 0.25})`;
+      ctx.lineWidth = 0.5;
+    }
     ctx.stroke();
   }, [breadcrumb]);
 
@@ -150,39 +146,35 @@ export default function Graph() {
     links: edges.map(e => ({ ...e })),
   };
 
-  if (nodes.length === 0) {
-    return (
-      <div className="flex items-center justify-center w-full h-full" style={{ background: '#050510' }}>
-        <div className="text-slate-400 text-center">
-          <div className="text-4xl mb-4">✦</div>
-          <div className="text-lg">Loading KhalsaGraph…</div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <ForceGraph2D
-      ref={graphRef}
-      graphData={graphData}
-      width={dims.w}
-      height={dims.h}
-      backgroundColor="#050510"
-      nodeCanvasObject={nodeCanvasObject}
-      nodeCanvasObjectMode={() => 'replace'}
-      linkCanvasObject={linkCanvasObject}
-      linkCanvasObjectMode={() => 'replace'}
-      onNodeClick={handleNodeClick}
-      onNodeHover={setHoveredNode}
-      onBackgroundClick={() => setSelectedNode(null)}
-      cooldownTicks={physicsEnabled ? 200 : 0}
-      d3AlphaDecay={0.02}
-      d3VelocityDecay={0.3}
-      nodeRelSize={1}
-      enableNodeDrag={true}
-      enableZoomInteraction={true}
-      minZoom={0.2}
-      maxZoom={12}
-    />
+    <div style={{ opacity: dimmed ? 0.15 : 1, transition: 'opacity 0.5s', filter: dimmed ? 'blur(2px)' : 'none' }}>
+      {nodes.length > 0 ? (
+        <ForceGraph2D
+          ref={graphRef}
+          graphData={graphData}
+          width={dims.w}
+          height={dims.h}
+          backgroundColor="#060B18"
+          nodeCanvasObject={nodeCanvasObject}
+          nodeCanvasObjectMode={() => 'replace'}
+          linkCanvasObject={linkCanvasObject}
+          linkCanvasObjectMode={() => 'replace'}
+          onNodeClick={handleNodeClick}
+          onNodeHover={setHoveredNode}
+          onBackgroundClick={() => setSelectedNode(null)}
+          onZoom={({ k }) => setZoom(k)}
+          cooldownTicks={physicsEnabled ? 300 : 0}
+          d3AlphaDecay={0.025}
+          d3VelocityDecay={0.35}
+          nodeRelSize={1}
+          enableNodeDrag={!dimmed}
+          enableZoomInteraction={!dimmed}
+          minZoom={0.05}
+          maxZoom={16}
+        />
+      ) : (
+        <div className="flex items-center justify-center w-full h-screen" style={{ background: '#060B18' }} />
+      )}
+    </div>
   );
 }

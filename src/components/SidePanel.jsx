@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useStore } from '../store/useStore';
 import { getSocraticBreakdown } from '../services/ai';
 import { getRaagColor } from '../constants/raagColors';
@@ -8,7 +10,6 @@ export default function SidePanel() {
   const sidePanelOpen = useStore(s => s.sidePanelOpen);
   const setSidePanelOpen = useStore(s => s.setSidePanelOpen);
   const textMode = useStore(s => s.textMode);
-  const setTextMode = useStore(s => s.setTextMode);
   const aiLoading = useStore(s => s.aiLoading);
   const aiResponse = useStore(s => s.aiResponse);
   const aiVirtues = useStore(s => s.aiVirtues);
@@ -18,6 +19,7 @@ export default function SidePanel() {
   const clearAiState = useStore(s => s.clearAiState);
 
   const [aiError, setAiError] = useState(null);
+  const [virtuesSaved, setVirtuesSaved] = useState(false);
 
   if (!sidePanelOpen || !selectedNode) return null;
 
@@ -33,11 +35,35 @@ export default function SidePanel() {
   const handleSocratic = async () => {
     const apiKey = localStorage.getItem('groqApiKey');
     if (!apiKey) {
-      setAiError('Please add your Groq API key in Settings (⚙ top right).');
+      setAiError('Add your Groq API key in Settings (⚙ top right) to use AI features.');
       return;
     }
     clearAiState();
     setAiError(null);
+    setVirtuesSaved(false);
+    setAiLoading(true);
+    try {
+      const { virtues } = await getSocraticBreakdown(node, apiKey, () => {
+        appendAiResponse('');
+      });
+      setAiVirtues(virtues);
+    } catch (e) {
+      setAiError(e.message);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  // Stream the response chunk by chunk via store
+  const handleSocraticStream = async () => {
+    const apiKey = localStorage.getItem('groqApiKey');
+    if (!apiKey) {
+      setAiError('Add your Groq API key in Settings (⚙ top right) to use AI features.');
+      return;
+    }
+    clearAiState();
+    setAiError(null);
+    setVirtuesSaved(false);
     setAiLoading(true);
     try {
       const { virtues } = await getSocraticBreakdown(node, apiKey, (delta) => {
@@ -64,133 +90,138 @@ export default function SidePanel() {
     }));
     localStorage.setItem('dailyPath', JSON.stringify([...newTasks, ...existing]));
     window.dispatchEvent(new Event('dailyPathUpdated'));
+    setVirtuesSaved(true);
   };
 
+  // Strip the JSON virtues block from displayed text
   const displayedAiText = aiResponse
-    ? aiResponse.replace(/\{"virtues"[\s\S]+?\}\s*\]/, '').trim()
+    ? aiResponse.replace(/\{"virtues"\s*:\s*\[[\s\S]*?\]\s*\}/g, '').trim()
     : '';
 
   return (
-    <div className="fixed right-0 top-0 h-full z-20 flex">
-      <div className="panel-slide-right glass w-full md:w-[420px] h-full flex flex-col overflow-hidden shadow-2xl border-l border-white/10">
+    <div className="fixed right-0 top-0 h-full z-20 flex pointer-events-none">
+      <div className="panel-slide-right pointer-events-auto glass w-full md:w-[400px] h-full flex flex-col overflow-hidden"
+        style={{ borderLeft: `1px solid ${color}22`, boxShadow: `-8px 0 40px rgba(0,0,0,0.4)` }}>
+
         {/* Header */}
-        <div className="flex items-start justify-between p-5 border-b border-white/10 flex-shrink-0">
+        <div className="flex items-start justify-between px-5 pt-5 pb-4 flex-shrink-0 border-b border-white/5">
           <div className="flex-1 min-w-0">
-            <span
-              className="inline-block text-xs font-semibold px-2 py-1 rounded-full mb-2"
-              style={{ background: color + '22', color }}
-            >
-              {node.raag}
-            </span>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-xs font-medium px-2.5 py-1 rounded-full"
+                style={{ background: color + '18', color, border: `1px solid ${color}30` }}>
+                {node.raag}
+              </span>
+              <span className="text-slate-500 text-xs">Ang {node.ang}</span>
+            </div>
             <div className="text-slate-400 text-sm">{node.writer}</div>
-            <div className="text-slate-500 text-xs mt-0.5">Ang {node.ang}</div>
           </div>
-          <button
-            onClick={() => setSidePanelOpen(false)}
-            className="text-slate-500 hover:text-white ml-4 flex-shrink-0 text-lg leading-none"
-          >
+          <button onClick={() => setSidePanelOpen(false)}
+            className="text-slate-600 hover:text-slate-300 ml-3 flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/5 transition-colors">
             ✕
           </button>
         </div>
 
-        {/* Text mode toggle */}
-        <div className="flex gap-1 p-4 flex-shrink-0">
-          {['gurmukhi', 'transliteration', 'english'].map(mode => (
-            <button
-              key={mode}
-              onClick={() => setTextMode(mode)}
-              className={`flex-1 text-xs py-1.5 rounded-lg transition-colors capitalize ${
-                textMode === mode
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-white/5 text-slate-400 hover:bg-white/10'
-              }`}
-            >
-              {mode === 'transliteration' ? 'Roman' : mode.charAt(0).toUpperCase() + mode.slice(1)}
-            </button>
-          ))}
-        </div>
-
-        {/* Scripture text */}
-        <div className="px-5 pb-4 flex-shrink-0">
-          <div className={`text-xl leading-relaxed text-white ${textMode === 'gurmukhi' ? 'font-gurmukhi text-2xl' : ''}`}>
-            {scriptText || <span className="text-slate-500 italic">No text available</span>}
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto">
+          {/* Scripture */}
+          <div className="px-5 py-5">
+            <div className={`leading-relaxed text-white ${
+              textMode === 'gurmukhi'
+                ? 'font-gurmukhi text-2xl'
+                : textMode === 'transliteration'
+                ? 'text-base italic text-slate-300'
+                : 'text-lg font-display'
+            }`}>
+              {scriptText || <span className="text-slate-600 text-sm not-italic font-sans">No text available</span>}
+            </div>
           </div>
-        </div>
-
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto px-5 pb-5 space-y-4">
-          {/* Socratic button */}
-          {!aiResponse && !aiLoading && (
-            <button
-              onClick={handleSocratic}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-sm font-medium transition-all shadow-lg"
-            >
-              ✦ Reflect with Ode2Socrates
-            </button>
-          )}
-
-          {aiError && (
-            <div className="text-red-400 text-sm bg-red-400/10 rounded-lg p-3">{aiError}</div>
-          )}
-
-          {aiLoading && !displayedAiText && (
-            <div className="flex items-center gap-2 text-indigo-300 text-sm">
-              <span className="animate-pulse">●</span> Thinking…
-            </div>
-          )}
-
-          {/* AI response */}
-          {displayedAiText && (
-            <div className="space-y-3">
-              <div className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap bg-white/5 rounded-xl p-4">
-                {displayedAiText}
-                {aiLoading && <span className="animate-pulse text-indigo-400">▊</span>}
-              </div>
-
-              {aiVirtues.length > 0 && (
-                <div className="space-y-2">
-                  <div className="text-xs text-slate-500 uppercase tracking-wider">Daily Virtues</div>
-                  {aiVirtues.map((v, i) => (
-                    <div key={i} className="flex items-start gap-3 bg-white/5 rounded-lg p-3">
-                      <span
-                        className="text-xs px-2 py-0.5 rounded-full flex-shrink-0 mt-0.5"
-                        style={{ background: color + '22', color }}
-                      >
-                        {v.theme}
-                      </span>
-                      <span className="text-sm text-slate-300">{v.task}</span>
-                    </div>
-                  ))}
-                  <button
-                    onClick={handleSaveVirtues}
-                    className="w-full py-2 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 text-sm transition-colors border border-emerald-600/30"
-                  >
-                    + Save to Daily Path
-                  </button>
-                </div>
-              )}
-
-              {!aiLoading && (
-                <button
-                  onClick={handleSocratic}
-                  className="w-full py-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 text-xs transition-colors"
-                >
-                  ↺ Ask again
-                </button>
-              )}
-            </div>
-          )}
 
           {/* Tags */}
-          {node.tags && node.tags.length > 0 && (
-            <div className="flex flex-wrap gap-2 pt-2 border-t border-white/10">
+          {node.tags?.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 px-5 pb-4">
               {node.tags.map(tag => (
-                <span key={tag} className="text-xs px-2 py-1 rounded-full bg-slate-700/60 text-slate-300">
+                <span key={tag} className="text-xs px-2 py-1 rounded-full bg-white/5 text-slate-500 border border-white/5">
                   {tag}
                 </span>
               ))}
             </div>
           )}
+
+          <div className="px-5 pb-5 space-y-4">
+            {/* Socratic button */}
+            {!aiResponse && !aiLoading && !aiError && (
+              <button onClick={handleSocraticStream}
+                className="w-full py-3 rounded-xl text-sm font-medium transition-all"
+                style={{
+                  background: `linear-gradient(135deg, ${color}22, ${color}11)`,
+                  border: `1px solid ${color}33`,
+                  color,
+                }}>
+                ✦ Reflect with Ode2Socrates
+              </button>
+            )}
+
+            {aiError && (
+              <div className="text-red-400 text-xs bg-red-400/8 rounded-xl p-3 border border-red-400/15">
+                {aiError}
+              </div>
+            )}
+
+            {aiLoading && !displayedAiText && (
+              <div className="flex items-center gap-2 text-accent/60 text-xs">
+                <span className="animate-pulse-slow">●</span>
+                <span className="animate-pulse-slow" style={{ animationDelay: '0.2s' }}>●</span>
+                <span className="animate-pulse-slow" style={{ animationDelay: '0.4s' }}>●</span>
+              </div>
+            )}
+
+            {/* AI response with markdown */}
+            {displayedAiText && (
+              <div className="space-y-4">
+                <div className="bg-white/3 rounded-xl p-4 border border-white/5">
+                  <div className="markdown-body">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {displayedAiText + (aiLoading ? ' ▊' : '')}
+                    </ReactMarkdown>
+                  </div>
+                </div>
+
+                {/* Virtues */}
+                {aiVirtues.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="text-xs font-medium tracking-widest uppercase text-slate-500">Daily Virtues</div>
+                    {aiVirtues.map((v, i) => (
+                      <div key={i} className="flex items-start gap-3 rounded-xl p-3"
+                        style={{ background: color + '0d', border: `1px solid ${color}18` }}>
+                        <span className="text-xs px-2 py-0.5 rounded-full flex-shrink-0 mt-0.5 font-medium"
+                          style={{ background: color + '20', color }}>
+                          {v.theme}
+                        </span>
+                        <span className="text-sm text-slate-300 leading-relaxed">{v.task}</span>
+                      </div>
+                    ))}
+
+                    {!virtuesSaved ? (
+                      <button onClick={handleSaveVirtues}
+                        className="w-full py-2.5 rounded-xl text-sm font-medium transition-all"
+                        style={{ background: 'rgba(16,185,129,0.1)', color: '#34D399', border: '1px solid rgba(16,185,129,0.2)' }}>
+                        + Save to Daily Path
+                      </button>
+                    ) : (
+                      <div className="text-center text-xs text-emerald-500 py-1">✓ Saved to Daily Path</div>
+                    )}
+                  </div>
+                )}
+
+                {!aiLoading && (
+                  <button onClick={handleSocraticStream}
+                    className="w-full py-2 rounded-xl text-xs text-slate-500 hover:text-slate-300 transition-colors hover:bg-white/5">
+                    ↺ Ask again
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
