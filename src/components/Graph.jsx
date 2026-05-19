@@ -68,6 +68,9 @@ export default function Graph() {
     const isHovered = hoveredNode?.id === node.id;
     const r = isSelected ? baseR * 1.6 : isHovered ? baseR * 1.25 : baseR;
 
+    // Guard against unpositioned nodes (NaN/undefined during initial layout)
+    if (!isFinite(node.x) || !isFinite(node.y)) return;
+
     // Glow effect
     const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, r * 2.5);
     gradient.addColorStop(0, color + 'cc');
@@ -132,6 +135,7 @@ export default function Graph() {
     const src = typeof link.source === 'object' ? link.source : null;
     const tgt = typeof link.target === 'object' ? link.target : null;
     if (!src || !tgt) return;
+    if (!isFinite(src.x) || !isFinite(src.y) || !isFinite(tgt.x) || !isFinite(tgt.y)) return;
 
     ctx.beginPath();
     ctx.moveTo(src.x, src.y);
