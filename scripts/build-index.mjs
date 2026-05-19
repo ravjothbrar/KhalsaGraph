@@ -103,20 +103,21 @@ function buildEdges(nodes) {
         if (!edgeSet.has(key)) {
           const degA = degreeCount.get(a) || 0;
           const degB = degreeCount.get(b) || 0;
-          if (degA < 8 && degB < 8) {
+          if (degA < 6 && degB < 6) {
             edgeSet.add(key);
             degreeCount.set(a, degA + 1);
             degreeCount.set(b, degB + 1);
-            if (edges.length >= 5000) break;
+            if (edgeSet.size >= 4000) break;
           }
         }
+        if (edgeSet.size >= 4000) break;
       }
-      if (edges.length >= 5000) break;
+      if (edgeSet.size >= 4000) break;
     }
-    if (edges.length >= 5000) break;
+    if (edgeSet.size >= 4000) break;
   }
 
-  // Count shared tags for strength
+  // Count shared tags for strength — only keep edges with ≥2 shared tags
   const tagSets = new Map(nodes.map(n => [n.id, new Set(n.tags || [])]));
   for (const key of edgeSet) {
     const [src, tgt] = key.split('|');
