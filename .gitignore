@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+.env
+.env.local
+# DO NOT ignore bani_index.json or embeddings.bin — they must be committed
