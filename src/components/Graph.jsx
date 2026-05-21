@@ -82,11 +82,28 @@ export default function Graph({ dimmed = false, onEnterFromClick = null }) {
       return;
     }
     setSelectedNode(node);
-    if (graphRef.current) {
-      graphRef.current.centerAt(node.x, node.y, 500);
-      graphRef.current.zoom(7, 500);
+    if (graphRef.current && isFinite(node.x) && isFinite(node.y)) {
+      // Collect up to 10 connected neighbours
+      const neighbourPositions = [];
+      for (const e of edges) {
+        const src = typeof e.source === 'object' ? e.source : graphData.nodes.find(n => n.id === e.source);
+        const tgt = typeof e.target === 'object' ? e.target : graphData.nodes.find(n => n.id === e.target);
+        if (!src || !tgt) continue;
+        if (src.id === node.id && isFinite(tgt.x)) neighbourPositions.push(tgt);
+        else if (tgt.id === node.id && isFinite(src.x)) neighbourPositions.push(src);
+        if (neighbourPositions.length >= 10) break;
+      }
+      const pts = [node, ...neighbourPositions.slice(0, 10)];
+      const xs = pts.map(n => n.x), ys = pts.map(n => n.y);
+      const minX = Math.min(...xs), maxX = Math.max(...xs);
+      const minY = Math.min(...ys), maxY = Math.max(...ys);
+      const pad = Math.max(maxX - minX, maxY - minY) * 0.35 + 80;
+      const w = maxX - minX + pad * 2, h = maxY - minY + pad * 2;
+      const z = Math.min(window.innerWidth / w, window.innerHeight / h) * 0.85;
+      graphRef.current.centerAt((minX + maxX) / 2, (minY + maxY) / 2, 600);
+      graphRef.current.zoom(Math.max(2, Math.min(z, 15)), 600);
     }
-  }, [setSelectedNode, onEnterFromClick]);
+  }, [setSelectedNode, onEnterFromClick, edges, graphData.nodes]);
 
   const handleBackgroundClick = useCallback(() => {
     if (onEnterFromClick) { onEnterFromClick(); return; }
@@ -133,11 +150,9 @@ export default function Graph({ dimmed = false, onEnterFromClick = null }) {
     const isSelected = selectedNode?.id === node.id;
     const isHovered = hoveredNode?.id === node.id;
 
-    // Raag isolation + selection isolation
     const raagDimmed = activeRaag && node.raagSlug !== activeRaag;
-    const isIsolated = connectedIds && !connectedIds.has(node.id);
 
-    if (isIsolated || raagDimmed) {
+    if (raagDimmed) {
       ctx.beginPath();
       ctx.arc(node.x, node.y, baseR * 0.45, 0, Math.PI * 2);
       ctx.fillStyle = color + '15';
@@ -253,9 +268,6 @@ export default function Graph({ dimmed = false, onEnterFromClick = null }) {
     if (!src || !tgt) return;
     if (!isFinite(src.x) || !isFinite(src.y) || !isFinite(tgt.x) || !isFinite(tgt.y)) return;
 
-    const srcIsolated = connectedIds && !connectedIds.has(src.id);
-    const tgtIsolated = connectedIds && !connectedIds.has(tgt.id);
-    if (srcIsolated || tgtIsolated) return;
     if (activeRaag && (src.raagSlug !== activeRaag || tgt.raagSlug !== activeRaag)) return;
 
     const srcBc = breadcrumb.indexOf(src.id);

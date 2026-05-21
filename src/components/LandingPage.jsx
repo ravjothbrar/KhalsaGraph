@@ -28,10 +28,10 @@ export default function LandingPage({ onEnter }) {
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex flex-col landing-veil">
+    <div className="fixed inset-0 z-40 flex flex-col landing-veil" style={{ pointerEvents: 'none' }}>
 
       {/* Nav */}
-      <header className="relative z-10 flex items-center justify-between px-8 sm:px-14 py-6">
+      <header className="relative z-10 flex items-center justify-between px-8 sm:px-14 py-6 pointer-events-auto">
         <div className="flex items-center gap-3">
           <img src="/KhalsaGraph/favicon.svg" alt="KhalsaGraph" className="w-8 h-8" />
           <span className="text-white font-semibold tracking-tight text-base">KhalsaGraph</span>
@@ -51,8 +51,8 @@ export default function LandingPage({ onEnter }) {
       </header>
 
       {/* Why section — below nav, above hero */}
-      <div className="relative z-10 px-8 sm:px-14 pt-6 pb-0 max-w-3xl">
-        <p className="text-xl sm:text-2xl font-light leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>
+      <div className="relative z-10 px-8 sm:px-14 pt-16 pb-0 max-w-3xl pointer-events-auto">
+        <p className="text-2xl sm:text-3xl font-light leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>
           KhalsaGraph is a way for you to search through select Gurbani, see translations and reflect on how you can put that into practice with AI-led advice —
           on how the{' '}
           <span style={{ color: '#F97316', fontStyle: 'normal' }}>Gurmukhi</span>{' '}
@@ -65,7 +65,7 @@ export default function LandingPage({ onEnter }) {
       <div className="flex-1" />
 
       {/* Hero — bottom-left */}
-      <div className="relative z-10 px-8 sm:px-14 pb-14 sm:pb-20">
+      <div className="relative z-10 px-8 sm:px-14 pb-14 sm:pb-20 pointer-events-auto">
         <div className="w-full max-w-[580px]">
 
           {/* Ik Onkaar */}
@@ -143,7 +143,7 @@ export default function LandingPage({ onEnter }) {
       </div>
 
       {/* Bottom strip */}
-      <div className="relative z-10 px-8 sm:px-14 py-3 flex items-center justify-between"
+      <div className="relative z-10 px-8 sm:px-14 py-3 flex items-center justify-between pointer-events-auto"
         style={{ borderTop: '1px solid rgba(139,92,246,0.08)' }}>
         <div className="flex items-center gap-6">
           {[
