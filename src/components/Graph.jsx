@@ -186,7 +186,7 @@ export default function Graph({ dimmed = false }) {
   }, [breadcrumb, connectedIds]);
 
   return (
-    <div style={{ opacity: dimmed ? 0.15 : 1, transition: 'opacity 0.7s', filter: dimmed ? 'blur(2px) saturate(0.4)' : 'none' }}>
+    <div style={{ opacity: dimmed ? 0.55 : 1, transition: 'opacity 0.8s', filter: dimmed ? 'saturate(0.7)' : 'none' }}>
       {nodes.length > 0 ? (
         <ForceGraph2D
           ref={graphRef}

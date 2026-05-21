@@ -40,7 +40,8 @@ export default function VirtueTracker() {
       {/* Toggle tab */}
       <button
         onClick={() => setOpen(!open)}
-        className="fixed left-0 top-1/2 -translate-y-1/2 z-30 glass rounded-r-xl px-2 py-5 flex flex-col items-center gap-1.5 text-slate-500 hover:text-slate-300 transition-colors"
+        className="fixed left-0 top-1/2 -translate-y-1/2 z-30 rounded-r-xl px-2 py-5 flex flex-col items-center gap-1.5 text-slate-600 hover:text-accent transition-colors"
+        style={{ background: 'rgba(5,10,22,0.92)', border: '1px solid rgba(249,115,22,0.18)', borderLeft: 'none' }}
         title="Daily Path"
       >
         <span className="text-xs font-medium" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
@@ -55,7 +56,8 @@ export default function VirtueTracker() {
 
       {open && (
         <div className="fixed left-0 top-0 h-full z-20 flex">
-          <div className="panel-slide-left glass w-72 h-full flex flex-col overflow-hidden" style={{ borderRight: '1px solid rgba(249,115,22,0.12)' }}>
+          <div className="panel-slide-left w-72 h-full flex flex-col overflow-hidden"
+          style={{ background: 'rgba(5,10,22,0.97)', borderRight: '1px solid rgba(249,115,22,0.18)' }}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 flex-shrink-0">
               <div>
                 <h2 className="text-white font-medium text-sm">Daily Path</h2>

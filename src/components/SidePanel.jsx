@@ -93,8 +93,12 @@ export default function SidePanel() {
   return (
     <div className="fixed right-0 top-0 h-full z-20 flex pointer-events-none">
       <div
-        className="panel-slide-right pointer-events-auto glass w-full md:w-[420px] h-full flex flex-col overflow-hidden"
-        style={{ borderLeft: `1px solid ${color}28`, boxShadow: `-8px 0 48px rgba(0,0,0,0.5)` }}
+        className="panel-slide-right pointer-events-auto w-full md:w-[420px] h-full flex flex-col overflow-hidden"
+        style={{
+          background: 'rgba(5,10,22,0.97)',
+          borderLeft: `1px solid ${color}35`,
+          boxShadow: `-4px 0 60px rgba(0,0,0,0.7)`
+        }}
       >
         {/* Header */}
         <div className="flex items-start justify-between px-5 pt-5 pb-4 flex-shrink-0 border-b border-white/5">

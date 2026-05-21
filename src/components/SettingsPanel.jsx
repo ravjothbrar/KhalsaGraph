@@ -36,8 +36,9 @@ export default function SettingsPanel() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setOpen(false)}>
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-      <div className="relative glass rounded-2xl w-full max-w-sm p-6 shadow-2xl fade-in" onClick={e => e.stopPropagation()}>
+      <div className="absolute inset-0 bg-black/70" />
+      <div className="relative rounded-2xl w-full max-w-sm p-6 shadow-2xl fade-in" onClick={e => e.stopPropagation()}
+        style={{ background: 'rgba(5,10,22,0.99)', border: '1px solid rgba(249,115,22,0.22)', boxShadow: '0 24px 80px rgba(0,0,0,0.8)' }}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-white font-semibold">Settings</h2>
           <button onClick={() => setOpen(false)} className="text-slate-500 hover:text-white w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/5">✕</button>
