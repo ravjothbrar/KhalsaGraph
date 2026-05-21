@@ -13,8 +13,6 @@ export default function App() {
   const setSettingsOpen = useStore(s => s.setSettingsOpen);
   const settingsOpen = useStore(s => s.settingsOpen);
   const nodes = useStore(s => s.nodes);
-  const textMode = useStore(s => s.textMode);
-  const setTextMode = useStore(s => s.setTextMode);
 
   const [loadError, setLoadError] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -86,23 +84,12 @@ export default function App() {
               <span className="text-sm text-slate-400 font-medium hidden sm:block">KhalsaGraph</span>
             </button>
 
-            {/* Search bar (centered, handled by SearchBar component itself) */}
-
             {/* Right controls */}
             <div className="pointer-events-auto flex items-center gap-2">
-              {/* Text mode toggle */}
-              <div className="nav-pill glass">
-                {[['G', 'gurmukhi'], ['R', 'transliteration'], ['E', 'english']].map(([label, m]) => (
-                  <button key={m} onClick={() => setTextMode(m)} className={textMode === m ? 'active' : ''} title={m}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-
               {/* Creator pill */}
               <a href="https://ravjothbrar.com/" target="_blank" rel="noopener noreferrer"
                 className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all hover:scale-105"
-                style={{ border:'1px solid rgba(139,92,246,0.35)', background:'rgba(139,92,246,0.08)', color:'#a78bfa' }}>
+                style={{ border: '1px solid rgba(139,92,246,0.35)', background: 'rgba(139,92,246,0.08)', color: '#a78bfa' }}>
                 <svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor">
                   <circle cx="6" cy="4" r="2.5"/><path d="M1.5 10.5c0-2.485 2.015-4.5 4.5-4.5s4.5 2.015 4.5 4.5"/>
                 </svg>
