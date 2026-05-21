@@ -21,10 +21,7 @@ export default function LandingPage({ onEnter }) {
     }, 150);
   };
 
-  const handleSelect = (node) => {
-    setSelectedNode(node);
-    onEnter();
-  };
+  const handleSelect = (node) => { setSelectedNode(node); onEnter(); };
 
   const handleKey = (e) => {
     if (e.key === 'Enter') {
@@ -35,67 +32,60 @@ export default function LandingPage({ onEnter }) {
   };
 
   return (
-    /* Full-screen veil — the actual graph shows through from behind */
     <div className="fixed inset-0 z-40 flex flex-col landing-veil">
 
-      {/* Top nav */}
-      <header className="relative z-10 flex items-center justify-between px-8 sm:px-12 py-6">
+      {/* Nav */}
+      <header className="relative z-10 flex items-center justify-between px-8 sm:px-14 py-6">
         <div className="flex items-center gap-3">
           <img src="/KhalsaGraph/favicon.svg" alt="KhalsaGraph" className="w-8 h-8" />
-          <span className="text-white font-semibold tracking-tight text-lg">KhalsaGraph</span>
+          <span className="text-white font-semibold tracking-tight text-base">KhalsaGraph</span>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           {nodes.length > 0 && (
             <span className="text-slate-600 text-xs hidden sm:block">
-              {nodes.length.toLocaleString()} shabads · {new Set(nodes.map(n => n.raag)).size} raags
+              {nodes.length.toLocaleString()} shabads
             </span>
           )}
-          <button
-            onClick={onEnter}
-            className="text-sm font-medium px-5 py-2 rounded-lg transition-all"
-            style={{ color: '#F97316', border: '1.5px solid rgba(249,115,22,0.35)', background: 'rgba(249,115,22,0.06)' }}
-          >
+          <button onClick={onEnter}
+            className="text-xs font-semibold px-4 py-2 rounded-lg transition-all"
+            style={{ color: '#A78BFA', border: '1.5px solid rgba(139,92,246,0.3)', background: 'rgba(139,92,246,0.07)' }}>
             Open graph →
           </button>
         </div>
       </header>
 
-      {/* Hero — bottom-left, Cosmograph style */}
-      <div className="relative z-10 flex-1 flex items-end px-8 sm:px-12 pb-14 sm:pb-20">
-        <div className="w-full max-w-xl">
+      {/* Hero — bottom-left */}
+      <div className="relative z-10 flex-1 flex items-end px-8 sm:px-14 pb-16 sm:pb-24">
+        <div className="w-full max-w-[560px]">
 
           {/* Gurmukhi epigraph */}
-          <p className="font-gurmukhi text-accent text-2xl mb-5 leading-none"
-            style={{ textShadow: '0 0 60px rgba(249,115,22,0.5)' }}>
+          <p className="font-gurmukhi text-[1.6rem] mb-6 leading-none"
+            style={{ color: '#F97316', textShadow: '0 0 80px rgba(249,115,22,0.6)' }}>
             ੴ ਸਤਿ ਨਾਮੁ
           </p>
 
-          {/* Main headline */}
-          <h1 className="hero-title text-[3.2rem] sm:text-[4.8rem] text-white mb-5"
-            style={{ textShadow: '0 2px 40px rgba(0,0,0,0.8)' }}>
+          {/* Headline */}
+          <h1 className="hero-title text-[3rem] sm:text-[4.5rem] text-white mb-4">
             Sri Guru<br />
             Granth Sahib Ji,<br />
-            <em className="not-italic" style={{ color: '#F97316' }}>connected.</em>
+            <span className="text-gradient-op">connected.</span>
           </h1>
 
-          <p className="text-slate-400 text-base leading-relaxed mb-8 max-w-md">
-            5,548 shabads from the eternal Guru — mapped by raag, writer, and virtue.
-            Search by meaning. Discover connections across centuries.
+          <p className="text-slate-500 text-base leading-relaxed mb-8 max-w-sm">
+            5,548 shabads mapped by raag, writer, and virtue.
+            Search by meaning, name, or feeling.
           </p>
 
           {/* Search */}
-          <div className="relative mb-5">
-            <div
-              className="flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all"
+          <div className="relative max-w-lg mb-6">
+            <div className="flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all"
               style={{
-                background: 'rgba(5,10,22,0.95)',
-                border: '1.5px solid rgba(249,115,22,0.3)',
-                boxShadow: '0 0 0 0px rgba(249,115,22,0)',
-                transition: 'border-color 0.15s, box-shadow 0.15s'
+                background: 'rgba(5,8,20,0.95)',
+                border: '1.5px solid rgba(249,115,22,0.28)',
               }}
               onFocus={() => {}}
             >
-              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" style={{ color: '#F97316', flexShrink: 0 }}>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ color: '#F97316', flexShrink: 0 }}>
                 <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.5"/>
                 <path d="M10.5 10.5L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
               </svg>
@@ -104,27 +94,26 @@ export default function LandingPage({ onEnter }) {
                 onChange={handleInput}
                 onKeyDown={handleKey}
                 placeholder="Search a virtue, raag, or concept…"
-                className="flex-1 bg-transparent text-white placeholder-slate-600 outline-none text-sm"
+                className="flex-1 bg-transparent text-white placeholder-slate-700 outline-none text-sm"
                 autoFocus
               />
               {query && (
                 <button onClick={() => { setQuery(''); setResults([]); }}
-                  className="text-slate-600 hover:text-slate-400 flex-shrink-0">✕</button>
+                  className="text-slate-700 hover:text-slate-400">✕</button>
               )}
             </div>
 
-            {/* Search results */}
             {results.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-2 rounded-xl overflow-hidden shadow-2xl z-20"
-                style={{ background: 'rgba(5,10,22,0.98)', border: '1px solid rgba(249,115,22,0.2)' }}>
+                style={{ background: 'rgba(5,8,20,0.98)', border: '1px solid rgba(139,92,246,0.2)' }}>
                 {results.map(node => (
                   <button key={node.id} onClick={() => handleSelect(node)}
-                    className="w-full text-left px-4 py-3 transition-colors border-b last:border-0"
-                    style={{ borderColor: 'rgba(249,115,22,0.08)' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(249,115,22,0.06)'}
+                    className="w-full text-left px-4 py-3 border-b last:border-0 transition-colors"
+                    style={{ borderColor: 'rgba(139,92,246,0.08)' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(139,92,246,0.07)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
-                    <div className="text-sm text-slate-200 truncate">{node.english.slice(0, 80)}…</div>
+                    <div className="text-sm text-slate-200 truncate">{node.english?.slice(0, 78)}…</div>
                     <div className="flex gap-2 mt-1.5">
                       <span className="text-xs px-2 py-0.5 rounded-full"
                         style={{ background: getRaagColor(node.raagSlug) + '20', color: getRaagColor(node.raagSlug) }}>
@@ -147,7 +136,7 @@ export default function LandingPage({ onEnter }) {
               href="https://ravjothbrar.com/"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-medium transition-all"
+              className="inline-flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-medium transition-all hover:scale-105"
               style={{ border: '1.5px solid rgba(139,92,246,0.35)', background: 'rgba(139,92,246,0.08)', color: '#a78bfa' }}
             >
               <svg width="11" height="11" viewBox="0 0 12 12" fill="currentColor">
@@ -160,13 +149,19 @@ export default function LandingPage({ onEnter }) {
         </div>
       </div>
 
-      {/* Bottom info strip */}
-      <div className="relative z-10 px-8 sm:px-12 py-4 flex items-center gap-6 border-t"
-        style={{ borderColor: 'rgba(249,115,22,0.08)' }}>
-        {['31 raags', '15 writers', 'Ang 1–1430', 'Dr. Sant Singh Khalsa translation'].map(s => (
-          <span key={s} className="text-xs text-slate-700 hidden sm:block">{s}</span>
+      {/* Bottom strip — hints about what's inside */}
+      <div className="relative z-10 px-8 sm:px-14 py-3 flex items-center gap-6"
+        style={{ borderTop: '1px solid rgba(139,92,246,0.08)' }}>
+        {[
+          { label: '31 raags', color: '#F97316' },
+          { label: '15 writers', color: '#A78BFA' },
+          { label: 'Ang 1–1430', color: '#60A5FA' },
+          { label: 'AI reflections', color: '#A78BFA' },
+        ].map(({ label, color }) => (
+          <span key={label} className="text-xs hidden sm:block" style={{ color: color + '60' }}>
+            {label}
+          </span>
         ))}
-        <span className="text-xs text-slate-700 sm:hidden">ShabadOS · DSSK translation</span>
       </div>
     </div>
   );

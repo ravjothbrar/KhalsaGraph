@@ -119,8 +119,10 @@ export default function SidePanel() {
             <button
               onClick={() => toggleFavourite(node.id)}
               title={isFav ? 'Remove from favourites' : 'Add to favourites'}
-              className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors hover:bg-white/8"
-              style={{ color: isFav ? '#FBBF24' : 'rgba(255,255,255,0.2)' }}
+              className="w-8 h-8 flex items-center justify-center rounded-lg transition-all"
+              style={{ color: isFav ? '#A78BFA' : 'rgba(139,92,246,0.3)',
+                background: isFav ? 'rgba(139,92,246,0.1)' : 'transparent',
+                border: isFav ? '1px solid rgba(139,92,246,0.25)' : '1px solid transparent' }}
             >
               {isFav ? '★' : '☆'}
             </button>
@@ -212,9 +214,9 @@ export default function SidePanel() {
               <button onClick={handleSocraticStream}
                 className="w-full py-3 rounded-xl text-sm font-medium transition-all"
                 style={{
-                  background: `linear-gradient(135deg, ${color}1a, ${color}0d)`,
-                  border: `1px solid ${color}30`,
-                  color,
+                  background: 'linear-gradient(135deg, rgba(139,92,246,0.1), rgba(139,92,246,0.05))',
+                  border: '1px solid rgba(139,92,246,0.22)',
+                  color: '#A78BFA',
                 }}>
                 ✦ Reflect with Ode2Socrates
               </button>

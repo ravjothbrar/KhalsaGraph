@@ -10,8 +10,12 @@ export const useStore = create((set, get) => ({
   selectedNode: null,
   setSelectedNode: (node) => {
     if (node) get().addToBreadcrumb(node.id);
-    set({ selectedNode: node, sidePanelOpen: !!node });
+    set({ selectedNode: node, sidePanelOpen: !!node, activeRaag: null });
   },
+
+  // Active raag cluster (zoom-to-raag mode)
+  activeRaag: null,
+  setActiveRaag: (slug) => set({ activeRaag: slug }),
 
   // Breadcrumb (last 5 visited node IDs)
   breadcrumb: [],
@@ -27,11 +31,11 @@ export const useStore = create((set, get) => ({
   settingsOpen: false,
   setSettingsOpen: (v) => set({ settingsOpen: v }),
 
-  // Text mode (for graph canvas labels; SidePanel shows all three always)
+  // Text mode (for graph canvas labels)
   textMode: (typeof localStorage !== 'undefined' ? localStorage.getItem('textMode') : null) ?? 'gurmukhi',
   setTextMode: (m) => { localStorage.setItem('textMode', m); set({ textMode: m }); },
 
-  // Favourites — persisted as array in localStorage
+  // Favourites
   favourites: new Set(
     typeof localStorage !== 'undefined'
       ? JSON.parse(localStorage.getItem('favourites') || '[]')

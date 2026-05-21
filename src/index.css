@@ -5,15 +5,21 @@
 
 :root {
   --bg-deep:    #050A16;
-  --bg-navy:    #080F20;
-  --bg-panel:   #070D1C;
+  --bg-navy:    #070E1E;
+  --bg-panel:   #060C1A;
   --accent:     #F97316;
-  --accent-dim: #C2530D;
   --accent-lo:  rgba(249,115,22,0.12);
+  --purple:     #8B5CF6;
+  --purple-lt:  #A78BFA;
+  --purple-lo:  rgba(139,92,246,0.12);
+  --blue:       #3B82F6;
+  --blue-dk:    #1E3A5F;
   --text:       #E8EDF5;
   --muted:      #4A6080;
-  --border-o:   rgba(249,115,22,0.18);  /* orange border */
-  --border-w:   rgba(255,255,255,0.06); /* white border */
+  --border-o:   rgba(249,115,22,0.18);
+  --border-p:   rgba(139,92,246,0.2);
+  --border-b:   rgba(59,130,246,0.15);
+  --border-w:   rgba(255,255,255,0.06);
 }
 
 * { box-sizing: border-box; }
@@ -31,40 +37,30 @@ html, body {
 /* Scrollbar */
 ::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(249,115,22,0.25); border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.3); border-radius: 2px; }
 
 /* Typography */
-.font-display {
-  font-family: 'DM Serif Display', Georgia, serif;
-}
-.font-gurmukhi {
-  font-family: 'Noto Sans Gurmukhi', serif;
-  line-height: 1.8;
-}
+.font-display { font-family: 'DM Serif Display', Georgia, serif; }
+.font-gurmukhi { font-family: 'Noto Sans Gurmukhi', serif; line-height: 1.8; }
 
 /* ─── Panels ─── */
-/* Solid dark navy — replaces frosted glass */
 .glass {
   background: var(--bg-panel);
   border: 1px solid var(--border-o);
 }
-
-/* Subtle variant (search results list, dropdowns) */
-.glass-light {
-  background: rgba(5, 10, 22, 0.98);
-  border: 1px solid var(--border-o);
+.glass-purple {
+  background: rgba(6, 8, 20, 0.97);
+  border: 1px solid var(--border-p);
+}
+.glass-blue {
+  background: rgba(6, 10, 24, 0.96);
+  border: 1px solid var(--border-b);
 }
 
-/* ─── Slide / fade animations ─── */
-.panel-slide-right {
-  animation: slideRight 0.24s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.panel-slide-left {
-  animation: slideLeft 0.24s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.fade-in {
-  animation: fadeIn 0.3s ease;
-}
+/* ─── Animations ─── */
+.panel-slide-right { animation: slideRight 0.24s cubic-bezier(0.16, 1, 0.3, 1); }
+.panel-slide-left  { animation: slideLeft  0.24s cubic-bezier(0.16, 1, 0.3, 1); }
+.fade-in           { animation: fadeIn 0.3s ease; }
 
 @keyframes slideRight {
   from { transform: translateX(100%); opacity: 0; }
@@ -84,22 +80,28 @@ html, body {
 }
 .animate-pulse-slow { animation: pulse-slow 1.6s ease-in-out infinite; }
 
-/* ─── Hero ─── */
+/* ─── Typography ─── */
 .hero-title {
   font-family: 'DM Serif Display', Georgia, serif;
-  line-height: 1.03;
-  letter-spacing: -0.025em;
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+}
+.text-gradient-op {
+  background: linear-gradient(135deg, #F97316 0%, #A78BFA 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-/* ─── Search bar (in-app) ─── */
+/* ─── Search bar ─── */
 .search-bar {
-  background: var(--bg-panel);
+  background: rgba(6,9,20,0.97);
   border: 1.5px solid var(--border-o);
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 .search-bar:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(249,115,22,0.08);
+  border-color: var(--purple-lt);
+  box-shadow: 0 0 0 3px rgba(139,92,246,0.1), 0 8px 40px rgba(0,0,0,0.6);
 }
 
 /* ─── Buttons ─── */
@@ -107,81 +109,84 @@ html, body {
   background: var(--accent);
   color: white;
   font-weight: 600;
-  letter-spacing: 0.01em;
   transition: all 0.15s;
 }
 .btn-primary:hover {
   background: #EA6C0F;
-  box-shadow: 0 4px 20px rgba(249,115,22,0.35);
+  box-shadow: 0 4px 24px rgba(249,115,22,0.4);
 }
-
-.btn-ghost {
-  background: transparent;
-  border: 1.5px solid var(--border-o);
-  color: var(--accent);
+.btn-purple {
+  background: var(--purple-lo);
+  color: var(--purple-lt);
+  border: 1.5px solid var(--border-p);
   font-weight: 500;
   transition: all 0.15s;
 }
-.btn-ghost:hover {
-  background: var(--accent-lo);
+.btn-purple:hover {
+  background: rgba(139,92,246,0.2);
+  box-shadow: 0 4px 20px rgba(139,92,246,0.2);
 }
 
-/* ─── Nav pill (search mode toggle) ─── */
-.nav-pill {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 2px;
-  background: rgba(5,10,22,0.6);
-  border: 1px solid var(--border-o);
-  border-radius: 8px;
+/* ─── Zoom slider ─── */
+.zoom-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 140px;
+  height: 3px;
+  border-radius: 99px;
+  background: linear-gradient(to right, rgba(139,92,246,0.5), rgba(249,115,22,0.5));
+  outline: none;
+  cursor: pointer;
 }
-.nav-pill button {
-  padding: 5px 10px;
-  border-radius: 5px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  transition: all 0.12s;
-  color: var(--muted);
-  letter-spacing: 0.03em;
+.zoom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #A78BFA;
+  border: 2px solid rgba(255,255,255,0.3);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(139,92,246,0.6);
+  transition: transform 0.1s;
 }
-.nav-pill button.active {
-  background: var(--accent);
-  color: white;
+.zoom-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
 }
-.nav-pill button:hover:not(.active) {
-  color: var(--text);
-  background: rgba(249,115,22,0.08);
+.zoom-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #A78BFA;
+  border: 2px solid rgba(255,255,255,0.3);
+  cursor: pointer;
 }
 
-/* ─── Markdown (AI response) ─── */
+/* ─── Landing veil: text stays readable left, graph shows fully right ─── */
+.landing-veil {
+  background: linear-gradient(
+    110deg,
+    rgba(5,10,22,0.97) 0%,
+    rgba(5,10,22,0.94) 25%,
+    rgba(5,10,22,0.80) 45%,
+    rgba(5,10,22,0.18) 70%,
+    rgba(5,10,22,0.04) 100%
+  );
+}
+
+/* ─── Markdown (AI) ─── */
 .markdown-body {
   font-size: 0.875rem;
   line-height: 1.75;
   color: #CBD5E1;
 }
 .markdown-body h2 {
-  font-family: 'Inter', sans-serif;
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--purple-lt);
   margin: 1.4rem 0 0.5rem;
 }
 .markdown-body p { margin: 0.5rem 0; }
 .markdown-body strong { color: #F1F5F9; font-weight: 600; }
 .markdown-body em { color: #94A3B8; font-style: italic; }
-
-/* ─── Landing overlay gradient ─── */
-.landing-veil {
-  /* Dark left wash fading to transparent right — Cosmograph style */
-  background: linear-gradient(
-    105deg,
-    rgba(5,10,22,0.97) 0%,
-    rgba(5,10,22,0.92) 30%,
-    rgba(5,10,22,0.75) 55%,
-    rgba(5,10,22,0.25) 80%,
-    rgba(5,10,22,0.05) 100%
-  );
-}

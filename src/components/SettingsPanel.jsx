@@ -53,8 +53,8 @@ export default function SettingsPanel() {
                 <button key={m.id} onClick={() => setTextMode(m.id)}
                   className="flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl text-xs transition-all"
                   style={textMode === m.id
-                    ? { background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.4)', color: '#F97316' }
-                    : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#64748B' }
+                    ? { background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.4)', color: '#A78BFA' }
+                    : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: '#4A6080' }
                   }>
                   <span className="font-medium">{m.label}</span>
                   <span className="text-[10px] opacity-70">{m.desc}</span>

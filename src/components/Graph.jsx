@@ -3,7 +3,14 @@ import ForceGraph2D from 'react-force-graph-2d';
 import { useStore } from '../store/useStore';
 import { getRaagColor } from '../constants/raagColors';
 
-const MOOD_RADIUS = { serene: 4, devotional: 6, contemplative: 5, joyful: 7, sorrowful: 4 };
+const MOOD_RADIUS = { serene: 6, devotional: 9, contemplative: 7, joyful: 10, sorrowful: 6 };
+const MIN_ZOOM = 0.04;
+const MAX_ZOOM = 20;
+
+const zoomToSlider = (z) =>
+  (Math.log(z) - Math.log(MIN_ZOOM)) / (Math.log(MAX_ZOOM) - Math.log(MIN_ZOOM));
+const sliderToZoom = (s) =>
+  Math.exp(s * (Math.log(MAX_ZOOM) - Math.log(MIN_ZOOM)) + Math.log(MIN_ZOOM));
 
 export default function Graph({ dimmed = false }) {
   const graphRef = useRef(null);
@@ -11,19 +18,47 @@ export default function Graph({ dimmed = false }) {
   const edges = useStore(s => s.edges);
   const selectedNode = useStore(s => s.selectedNode);
   const setSelectedNode = useStore(s => s.setSelectedNode);
+  const activeRaag = useStore(s => s.activeRaag);
+  const setActiveRaag = useStore(s => s.setActiveRaag);
   const breadcrumb = useStore(s => s.breadcrumb);
   const textMode = useStore(s => s.textMode);
 
   const [hoveredNode, setHoveredNode] = useState(null);
+  const [sliderZoom, setSliderZoom] = useState(1);
 
-  // CRITICAL: memoize so ForceGraph2D never sees new objects on hover/zoom
-  // Without this, every state update recreates graphData and resets simulation positions
+  // Phantom raag-label nodes — fixed at centroid of each raag cluster
+  const raagLabelNodes = useMemo(() => {
+    if (!nodes.length) return [];
+    const map = new Map();
+    for (const n of nodes) {
+      if (!map.has(n.raagSlug)) {
+        map.set(n.raagSlug, { raag: n.raag, raagSlug: n.raagSlug, sumX: 0, sumY: 0, count: 0 });
+      }
+      const g = map.get(n.raagSlug);
+      g.sumX += n.clusterX;
+      g.sumY += n.clusterY;
+      g.count++;
+    }
+    return [...map.values()].map(g => ({
+      id: `__raag__${g.raagSlug}`,
+      raag: g.raag,
+      raagSlug: g.raagSlug,
+      isRaagLabel: true,
+      // fixed position — won't move in simulation
+      fx: g.sumX / g.count,
+      fy: g.sumY / g.count,
+      clusterX: g.sumX / g.count,
+      clusterY: g.sumY / g.count,
+    }));
+  }, [nodes]);
+
+  // CRITICAL: memoize graphData — new objects on every render reset simulation positions
   const graphData = useMemo(() => ({
-    nodes: nodes.map(n => ({ ...n })),
+    nodes: [...nodes.map(n => ({ ...n })), ...raagLabelNodes],
     links: edges.map(e => ({ ...e })),
-  }), [nodes, edges]);
+  }), [nodes, edges, raagLabelNodes]);
 
-  // IDs of the selected node + its direct neighbours
+  // For isolation: selected node + its direct neighbours
   const connectedIds = useMemo(() => {
     if (!selectedNode) return null;
     const ids = new Set([selectedNode.id]);
@@ -37,28 +72,85 @@ export default function Graph({ dimmed = false }) {
   }, [selectedNode, edges]);
 
   const handleNodeClick = useCallback((node) => {
+    if (node.isRaagLabel) {
+      // Zoom to this raag cluster
+      setActiveRaag(node.raagSlug);
+      if (graphRef.current) {
+        graphRef.current.centerAt(node.fx, node.fy, 600);
+        graphRef.current.zoom(3.5, 600);
+      }
+      return;
+    }
     setSelectedNode(node);
     if (graphRef.current) {
       graphRef.current.centerAt(node.x, node.y, 500);
-      graphRef.current.zoom(6, 500);
+      graphRef.current.zoom(7, 500);
     }
-  }, [setSelectedNode]);
+  }, [setSelectedNode, setActiveRaag]);
+
+  const handleBackgroundClick = useCallback(() => {
+    if (selectedNode) { setSelectedNode(null); return; }
+    if (activeRaag) { setActiveRaag(null); return; }
+  }, [selectedNode, activeRaag, setSelectedNode, setActiveRaag]);
 
   const handleEngineStop = useCallback(() => {
     if (graphRef.current) graphRef.current.pauseAnimation();
   }, []);
 
+  const handleZoom = useCallback(({ k }) => {
+    setSliderZoom(k);
+  }, []);
+
   const nodeCanvasObject = useCallback((node, ctx, globalScale) => {
     if (!isFinite(node.x) || !isFinite(node.y)) return;
 
+    // ── Raag cluster label ──
+    if (node.isRaagLabel) {
+      // Only show at overview zoom; fade out as we zoom in
+      const maxLabelZoom = 1.2;
+      if (globalScale > maxLabelZoom) return;
+      // Also hide during selectedNode isolation
+      if (connectedIds) return;
+
+      const alpha = Math.max(0, 1 - globalScale / maxLabelZoom);
+      const color = getRaagColor(node.raagSlug);
+      const isActive = activeRaag === node.raagSlug;
+      const fs = 13 / globalScale;
+
+      ctx.font = `700 ${fs}px Inter, sans-serif`;
+      ctx.textAlign = 'center';
+      const text = node.raag || node.raagSlug;
+      const tw = ctx.measureText(text).width;
+      const pw = tw + fs * 2.0, ph = fs * 1.9;
+
+      ctx.globalAlpha = alpha * (isActive ? 1 : 0.75);
+
+      // Background pill
+      ctx.fillStyle = isActive ? color + '30' : color + '12';
+      ctx.strokeStyle = isActive ? color + '80' : color + '35';
+      ctx.lineWidth = (isActive ? 1.5 : 1) / globalScale;
+      ctx.beginPath();
+      ctx.roundRect(node.x - pw / 2, node.y - ph / 2, pw, ph, ph / 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = color;
+      ctx.fillText(text, node.x, node.y + fs * 0.38);
+      ctx.globalAlpha = 1;
+      return;
+    }
+
     const color = getRaagColor(node.raagSlug);
-    const baseR = MOOD_RADIUS[node.mood] || 5;
+    const baseR = MOOD_RADIUS[node.mood] || 6;
     const isSelected = selectedNode?.id === node.id;
     const isHovered = hoveredNode?.id === node.id;
 
-    // Isolation: dim nodes not connected to the selection
+    // Raag cluster dimming: if activeRaag set and this node is in a different raag
+    const raagDimmed = activeRaag && node.raagSlug !== activeRaag;
+    // Selection isolation
     const isIsolated = connectedIds && !connectedIds.has(node.id);
-    if (isIsolated) {
+
+    if (isIsolated || raagDimmed) {
       ctx.beginPath();
       ctx.arc(node.x, node.y, baseR * 0.5, 0, Math.PI * 2);
       ctx.fillStyle = color + '18';
@@ -66,21 +158,21 @@ export default function Graph({ dimmed = false }) {
       return;
     }
 
-    const r = isSelected ? baseR * 1.8 : isHovered ? baseR * 1.3 : baseR;
+    const r = isSelected ? baseR * 3.2 : isHovered ? baseR * 1.6 : baseR;
 
-    // Skip expensive glow at low zoom
-    if (globalScale < 0.8) {
+    // Skip expensive glow at very low zoom
+    if (globalScale < 0.6) {
       ctx.beginPath();
-      ctx.arc(node.x, node.y, r * 0.7, 0, Math.PI * 2);
+      ctx.arc(node.x, node.y, r * 0.75, 0, Math.PI * 2);
       ctx.fillStyle = color;
       ctx.fill();
       return;
     }
 
-    // Glow
-    const glowR = r * 2.5;
-    const gradient = ctx.createRadialGradient(node.x, node.y, r * 0.2, node.x, node.y, glowR);
-    gradient.addColorStop(0, color + '99');
+    // Outer glow
+    const glowR = r * (isSelected ? 3.5 : 2.5);
+    const gradient = ctx.createRadialGradient(node.x, node.y, r * 0.15, node.x, node.y, glowR);
+    gradient.addColorStop(0, color + (isSelected ? 'CC' : '88'));
     gradient.addColorStop(1, color + '00');
     ctx.beginPath();
     ctx.arc(node.x, node.y, glowR, 0, Math.PI * 2);
@@ -93,16 +185,28 @@ export default function Graph({ dimmed = false }) {
     ctx.fillStyle = color;
     ctx.fill();
 
-    // Selected ring
+    // Selected: purple ring
     if (isSelected) {
       ctx.beginPath();
-      ctx.arc(node.x, node.y, r + 2.5 / globalScale, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+      ctx.arc(node.x, node.y, r + 3.5 / globalScale, 0, Math.PI * 2);
+      ctx.strokeStyle = '#A78BFA';
+      ctx.lineWidth = 2 / globalScale;
+      ctx.stroke();
+      // outer white ring
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, r + 6 / globalScale, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+      ctx.lineWidth = 1 / globalScale;
+      ctx.stroke();
+    } else if (isHovered) {
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, r + 2 / globalScale, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(167,139,250,0.5)';
       ctx.lineWidth = 1.5 / globalScale;
       ctx.stroke();
     }
 
-    // Node text at high zoom — always show Gurmukhi (or textMode override)
+    // Node text at high zoom
     if (globalScale > 4) {
       const fade = Math.min(1, (globalScale - 4) / 2);
       const rawText = textMode === 'english'
@@ -125,41 +229,43 @@ export default function Graph({ dimmed = false }) {
 
         const tw = ctx.measureText(text).width;
         const ph = fs * 2.0, pw = tw + fs * 1.6;
-        const py = node.y + r + fs * 1.8;
+        const py = node.y + r + fs * 2.0;
 
-        ctx.fillStyle = 'rgba(6,11,24,0.9)';
+        ctx.fillStyle = 'rgba(5,10,22,0.92)';
         ctx.beginPath();
-        ctx.roundRect(node.x - pw / 2, py - ph / 2, pw, ph, fs * 0.4);
+        ctx.roundRect(node.x - pw / 2, py - ph / 2, pw, ph, fs * 0.5);
         ctx.fill();
 
         ctx.fillStyle = isGurmukhi ? '#F97316' : '#CBD5E1';
         ctx.fillText(text, node.x, py + fs * 0.35);
         ctx.globalAlpha = 1;
       }
-    } else if (globalScale > 2.5 && (isSelected || isHovered)) {
+    } else if (globalScale > 2 && (isSelected || isHovered)) {
       const label = (node.writer || '').replace(' Ji', '').replace('Guru ', '');
       const fs = 7 / globalScale;
       ctx.font = `${fs}px Inter, sans-serif`;
-      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.fillStyle = 'rgba(167,139,250,0.7)';
       ctx.textAlign = 'center';
-      ctx.globalAlpha = 0.7;
-      ctx.fillText(label, node.x, node.y + r + 9 / globalScale);
-      ctx.globalAlpha = 1;
+      ctx.fillText(label, node.x, node.y + r + 10 / globalScale);
     }
-  }, [selectedNode, hoveredNode, textMode, connectedIds]);
+  }, [selectedNode, hoveredNode, textMode, connectedIds, activeRaag]);
 
   const linkCanvasObject = useCallback((link, ctx, globalScale) => {
-    if (globalScale < 0.3) return;
+    if (globalScale < 0.25) return;
 
     const src = typeof link.source === 'object' ? link.source : null;
     const tgt = typeof link.target === 'object' ? link.target : null;
     if (!src || !tgt) return;
+    if (src.isRaagLabel || tgt.isRaagLabel) return;
     if (!isFinite(src.x) || !isFinite(src.y) || !isFinite(tgt.x) || !isFinite(tgt.y)) return;
 
-    // Dim links from isolated nodes
     const srcIsolated = connectedIds && !connectedIds.has(src.id);
     const tgtIsolated = connectedIds && !connectedIds.has(tgt.id);
     if (srcIsolated || tgtIsolated) return;
+
+    const raagDimSrc = activeRaag && src.raagSlug !== activeRaag;
+    const raagDimTgt = activeRaag && tgt.raagSlug !== activeRaag;
+    if (raagDimSrc || raagDimTgt) return;
 
     const srcBc = breadcrumb.indexOf(src.id);
     const tgtBc = breadcrumb.indexOf(tgt.id);
@@ -173,35 +279,43 @@ export default function Graph({ dimmed = false }) {
       ctx.strokeStyle = 'rgba(249,115,22,0.5)';
       ctx.lineWidth = 1.4;
     } else if (connectedIds) {
-      // Highlight edges between connected nodes
-      const alpha = Math.min(0.4, (link.strength || 0.3) * 0.5);
+      const alpha = Math.min(0.45, (link.strength || 0.3) * 0.6);
+      ctx.strokeStyle = `rgba(139,92,246,${alpha})`;
+      ctx.lineWidth = 0.7;
+    } else if (activeRaag) {
+      const alpha = Math.min(0.35, (link.strength || 0.3) * 0.45);
       ctx.strokeStyle = `rgba(249,115,22,${alpha})`;
-      ctx.lineWidth = 0.6;
+      ctx.lineWidth = 0.5;
     } else {
       const alpha = Math.min(0.18, (link.strength || 0.3) * 0.2) * Math.min(1, globalScale * 2);
-      ctx.strokeStyle = `rgba(90,112,144,${alpha})`;
+      ctx.strokeStyle = `rgba(90,112,180,${alpha})`;
       ctx.lineWidth = 0.4;
     }
     ctx.stroke();
-  }, [breadcrumb, connectedIds]);
+  }, [breadcrumb, connectedIds, activeRaag]);
 
   return (
-    <div style={{ opacity: dimmed ? 0.55 : 1, transition: 'opacity 0.8s', filter: dimmed ? 'saturate(0.7)' : 'none' }}>
+    <div className="relative" style={{
+      opacity: dimmed ? 0.88 : 1,
+      transition: 'opacity 0.8s',
+      filter: dimmed ? 'saturate(0.85)' : 'none',
+    }}>
       {nodes.length > 0 ? (
         <ForceGraph2D
           ref={graphRef}
           graphData={graphData}
           width={window.innerWidth}
           height={window.innerHeight}
-          backgroundColor="#060B18"
+          backgroundColor="#050A16"
           nodeCanvasObject={nodeCanvasObject}
           nodeCanvasObjectMode={() => 'replace'}
           linkCanvasObject={linkCanvasObject}
           linkCanvasObjectMode={() => 'replace'}
           onNodeClick={handleNodeClick}
           onNodeHover={setHoveredNode}
-          onBackgroundClick={() => setSelectedNode(null)}
+          onBackgroundClick={handleBackgroundClick}
           onEngineStop={handleEngineStop}
+          onZoom={handleZoom}
           warmupTicks={200}
           cooldownTicks={80}
           cooldownTime={3000}
@@ -210,11 +324,39 @@ export default function Graph({ dimmed = false }) {
           nodeRelSize={1}
           enableNodeDrag={!dimmed}
           enableZoomInteraction={!dimmed}
-          minZoom={0.04}
-          maxZoom={20}
+          minZoom={MIN_ZOOM}
+          maxZoom={MAX_ZOOM}
         />
       ) : (
-        <div style={{ width: '100vw', height: '100vh', background: '#060B18' }} />
+        <div style={{ width: '100vw', height: '100vh', background: '#050A16' }} />
+      )}
+
+      {/* Zoom slider — only visible in app mode */}
+      {!dimmed && nodes.length > 0 && (
+        <div
+          className="fixed bottom-10 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 px-4 py-2 rounded-full"
+          style={{
+            background: 'rgba(5,10,22,0.88)',
+            border: '1px solid rgba(139,92,246,0.25)',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
+          }}
+        >
+          <span className="text-slate-600 text-xs select-none">−</span>
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.005}
+            value={zoomToSlider(Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, sliderZoom)))}
+            onChange={e => {
+              const z = sliderToZoom(Number(e.target.value));
+              setSliderZoom(z);
+              graphRef.current?.zoom(z, 80);
+            }}
+            className="zoom-slider"
+          />
+          <span className="text-slate-600 text-xs select-none">+</span>
+        </div>
       )}
     </div>
   );
