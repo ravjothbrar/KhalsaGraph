@@ -7,6 +7,7 @@ import SidePanel from './components/SidePanel';
 import VirtueTracker from './components/VirtueTracker';
 import SettingsPanel from './components/SettingsPanel';
 import LandingPage from './components/LandingPage';
+import TourModal from './components/TourModal';
 
 export default function App() {
   const setGraphData = useStore(s => s.setGraphData);
@@ -17,6 +18,7 @@ export default function App() {
   const [loadError, setLoadError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showApp, setShowApp] = useState(false);
+  const [showTour, setShowTour] = useState(false);
 
   useEffect(() => {
     const base = import.meta.env.BASE_URL || '/';
@@ -38,10 +40,25 @@ export default function App() {
     loadData();
   }, [setGraphData]);
 
+  // Show tour on first visit
+  useEffect(() => {
+    if (!loading && !loadError) {
+      if (!localStorage.getItem('tourSeen')) {
+        setShowTour(true);
+        localStorage.setItem('tourSeen', 'true');
+      }
+    }
+  }, [loading, loadError]);
+
+  const handleEnterFromLanding = () => setShowApp(true);
+
   return (
     <div className="relative w-screen h-screen overflow-hidden" style={{ background: '#050A16' }}>
-      {/* Graph always present — opacity controlled by dimmed prop */}
-      <Graph dimmed={!showApp} />
+      {/* Graph always present — passes onEnterFromClick when on landing */}
+      <Graph
+        dimmed={!showApp}
+        onEnterFromClick={!showApp ? handleEnterFromLanding : null}
+      />
 
       {/* Loading */}
       {loading && (
@@ -70,7 +87,7 @@ export default function App() {
 
       {/* Landing */}
       {!loading && !showApp && !loadError && (
-        <LandingPage onEnter={() => setShowApp(true)} />
+        <LandingPage onEnter={handleEnterFromLanding} />
       )}
 
       {/* App UI */}
@@ -81,29 +98,37 @@ export default function App() {
             <button
               onClick={() => setShowApp(false)}
               className="pointer-events-auto flex items-center gap-2 px-3 py-2 rounded-lg transition-colors hover:bg-white/5"
-              style={{ border: '1px solid rgba(249,115,22,0.18)', background: 'rgba(5,10,22,0.85)' }}
+              style={{ border: '1px solid rgba(249,115,22,0.18)', background: 'rgba(4,7,18,0.88)' }}
             >
               <img src="/KhalsaGraph/favicon.svg" alt="" className="w-5 h-5" />
               <span className="text-sm text-slate-400 font-medium hidden sm:block">KhalsaGraph</span>
             </button>
 
             <div className="pointer-events-auto flex items-center gap-2">
-              <a href="https://ravjothbrar.com/" target="_blank" rel="noopener noreferrer"
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105"
-                style={{ border: '1.5px solid rgba(139,92,246,0.35)', background: 'rgba(139,92,246,0.08)', color: '#a78bfa' }}>
-                <svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor">
-                  <circle cx="6" cy="4" r="2.5"/><path d="M1.5 10.5c0-2.485 2.015-4.5 4.5-4.5s4.5 2.015 4.5 4.5"/>
-                </svg>
-                Ravjoth Brar
-              </a>
+              {/* Tour button */}
+              <button
+                onClick={() => setShowTour(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors"
+                style={{
+                  border: '1px solid rgba(139,92,246,0.22)',
+                  background: 'rgba(4,7,18,0.88)',
+                  color: '#A78BFA',
+                }}
+                title="How it works"
+              >
+                <span>?</span>
+                <span className="hidden sm:block">Tour</span>
+              </button>
 
+              {/* Settings with label */}
               <button
                 onClick={() => setSettingsOpen(!settingsOpen)}
-                className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-500 hover:text-accent transition-colors text-sm"
-                style={{ border: '1px solid rgba(249,115,22,0.18)', background: 'rgba(5,10,22,0.85)' }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors text-slate-400 hover:text-white"
+                style={{ border: '1px solid rgba(249,115,22,0.18)', background: 'rgba(4,7,18,0.88)' }}
                 title="Settings"
               >
-                ⚙
+                <span>⚙</span>
+                <span className="hidden sm:block">Settings</span>
               </button>
             </div>
           </div>
@@ -113,7 +138,7 @@ export default function App() {
           {/* Node count */}
           {nodes.length > 0 && (
             <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-10 text-xs pointer-events-none"
-              style={{ color: 'rgba(249,115,22,0.3)' }}>
+              style={{ color: 'rgba(249,115,22,0.28)' }}>
               {nodes.length.toLocaleString()} shabads · {new Set(nodes.map(n => n.raag)).size} raags
             </div>
           )}
@@ -123,6 +148,9 @@ export default function App() {
           <SettingsPanel />
         </>
       )}
+
+      {/* Tour modal — renders on top of everything */}
+      {showTour && <TourModal onClose={() => setShowTour(false)} />}
     </div>
   );
 }

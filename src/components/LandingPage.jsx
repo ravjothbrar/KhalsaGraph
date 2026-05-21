@@ -22,12 +22,8 @@ export default function LandingPage({ onEnter }) {
   };
 
   const handleSelect = (node) => { setSelectedNode(node); onEnter(); };
-
   const handleKey = (e) => {
-    if (e.key === 'Enter') {
-      if (results.length) handleSelect(results[0]);
-      else onEnter();
-    }
+    if (e.key === 'Enter') { if (results.length) handleSelect(results[0]); else onEnter(); }
     if (e.key === 'Escape') { setQuery(''); setResults([]); }
   };
 
@@ -54,38 +50,47 @@ export default function LandingPage({ onEnter }) {
         </div>
       </header>
 
-      {/* Hero — bottom-left */}
-      <div className="relative z-10 flex-1 flex items-end px-8 sm:px-14 pb-16 sm:pb-24">
-        <div className="w-full max-w-[560px]">
+      {/* Why section — below nav, above hero */}
+      <div className="relative z-10 px-8 sm:px-14 pt-6 pb-0 max-w-3xl">
+        <p className="text-xl sm:text-2xl font-light leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>
+          KhalsaGraph is a way for you to search through select Gurbani, see translations and reflect on how you can put that into practice with AI-led advice —
+          on how the{' '}
+          <span style={{ color: '#F97316', fontStyle: 'normal' }}>Gurmukhi</span>{' '}
+          relates to your{' '}
+          <span className="text-gradient-op">daily actions.</span>
+        </p>
+      </div>
 
-          {/* Gurmukhi epigraph */}
-          <p className="font-gurmukhi text-[1.6rem] mb-6 leading-none"
+      {/* Flex spacer — graph shows through here */}
+      <div className="flex-1" />
+
+      {/* Hero — bottom-left */}
+      <div className="relative z-10 px-8 sm:px-14 pb-14 sm:pb-20">
+        <div className="w-full max-w-[580px]">
+
+          {/* Ik Onkaar */}
+          <p className="font-gurmukhi text-[1.6rem] mb-5 leading-none"
             style={{ color: '#F97316', textShadow: '0 0 80px rgba(249,115,22,0.6)' }}>
             ੴ ਸਤਿ ਨਾਮੁ
           </p>
 
           {/* Headline */}
-          <h1 className="hero-title text-[3rem] sm:text-[4.5rem] text-white mb-4">
+          <h1 className="hero-title text-[3rem] sm:text-[4.5rem] text-white mb-5">
             Sri Guru<br />
             Granth Sahib Ji,<br />
             <span className="text-gradient-op">connected.</span>
           </h1>
 
-          <p className="text-slate-500 text-base leading-relaxed mb-8 max-w-sm">
-            5,548 shabads mapped by raag, writer, and virtue.
-            Search by meaning, name, or feeling.
-          </p>
-
-          {/* Search */}
-          <div className="relative max-w-lg mb-6">
-            <div className="flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all"
+          {/* Search — larger */}
+          <div className="relative max-w-xl mb-6">
+            <div className="flex items-center gap-3 px-5 py-4 rounded-xl transition-all"
               style={{
-                background: 'rgba(5,8,20,0.95)',
-                border: '1.5px solid rgba(249,115,22,0.28)',
+                background: 'rgba(4,6,18,0.96)',
+                border: '1.5px solid rgba(249,115,22,0.32)',
+                fontSize: '1rem',
               }}
-              onFocus={() => {}}
             >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ color: '#F97316', flexShrink: 0 }}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ color: '#F97316', flexShrink: 0 }}>
                 <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.5"/>
                 <path d="M10.5 10.5L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
               </svg>
@@ -94,26 +99,27 @@ export default function LandingPage({ onEnter }) {
                 onChange={handleInput}
                 onKeyDown={handleKey}
                 placeholder="Search a virtue, raag, or concept…"
-                className="flex-1 bg-transparent text-white placeholder-slate-700 outline-none text-sm"
+                className="flex-1 bg-transparent text-white placeholder-slate-700 outline-none"
+                style={{ fontSize: '0.95rem' }}
                 autoFocus
               />
               {query && (
                 <button onClick={() => { setQuery(''); setResults([]); }}
-                  className="text-slate-700 hover:text-slate-400">✕</button>
+                  className="text-slate-700 hover:text-slate-400 flex-shrink-0">✕</button>
               )}
             </div>
 
             {results.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-2 rounded-xl overflow-hidden shadow-2xl z-20"
-                style={{ background: 'rgba(5,8,20,0.98)', border: '1px solid rgba(139,92,246,0.2)' }}>
+                style={{ background: 'rgba(4,6,18,0.99)', border: '1px solid rgba(139,92,246,0.2)' }}>
                 {results.map(node => (
                   <button key={node.id} onClick={() => handleSelect(node)}
-                    className="w-full text-left px-4 py-3 border-b last:border-0 transition-colors"
-                    style={{ borderColor: 'rgba(139,92,246,0.08)' }}
+                    className="w-full text-left px-5 py-3 border-b last:border-0 transition-colors"
+                    style={{ borderColor: 'rgba(139,92,246,0.07)' }}
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(139,92,246,0.07)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
-                    <div className="text-sm text-slate-200 truncate">{node.english?.slice(0, 78)}…</div>
+                    <div className="text-sm text-slate-200 truncate">{node.english?.slice(0, 80)}…</div>
                     <div className="flex gap-2 mt-1.5">
                       <span className="text-xs px-2 py-0.5 rounded-full"
                         style={{ background: getRaagColor(node.raagSlug) + '20', color: getRaagColor(node.raagSlug) }}>
@@ -132,36 +138,37 @@ export default function LandingPage({ onEnter }) {
             <button onClick={onEnter} className="btn-primary px-7 py-3 rounded-xl text-sm">
               Explore the graph →
             </button>
-            <a
-              href="https://ravjothbrar.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-medium transition-all hover:scale-105"
-              style={{ border: '1.5px solid rgba(139,92,246,0.35)', background: 'rgba(139,92,246,0.08)', color: '#a78bfa' }}
-            >
-              <svg width="11" height="11" viewBox="0 0 12 12" fill="currentColor">
-                <circle cx="6" cy="4" r="2.5"/>
-                <path d="M1.5 10.5c0-2.485 2.015-4.5 4.5-4.5s4.5 2.015 4.5 4.5"/>
-              </svg>
-              by Ravjoth Brar
-            </a>
           </div>
         </div>
       </div>
 
-      {/* Bottom strip — hints about what's inside */}
-      <div className="relative z-10 px-8 sm:px-14 py-3 flex items-center gap-6"
+      {/* Bottom strip */}
+      <div className="relative z-10 px-8 sm:px-14 py-3 flex items-center justify-between"
         style={{ borderTop: '1px solid rgba(139,92,246,0.08)' }}>
-        {[
-          { label: '31 raags', color: '#F97316' },
-          { label: '15 writers', color: '#A78BFA' },
-          { label: 'Ang 1–1430', color: '#60A5FA' },
-          { label: 'AI reflections', color: '#A78BFA' },
-        ].map(({ label, color }) => (
-          <span key={label} className="text-xs hidden sm:block" style={{ color: color + '60' }}>
-            {label}
-          </span>
-        ))}
+        <div className="flex items-center gap-6">
+          {[
+            { label: '31 raags', color: '#F97316' },
+            { label: '15 writers', color: '#A78BFA' },
+            { label: 'Ang 1–1430', color: '#60A5FA' },
+          ].map(({ label, color }) => (
+            <span key={label} className="text-xs hidden sm:block" style={{ color: color + '55' }}>
+              {label}
+            </span>
+          ))}
+        </div>
+        <a
+          href="https://ravjothbrar.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all hover:scale-105"
+          style={{ border: '1.5px solid rgba(139,92,246,0.3)', background: 'rgba(139,92,246,0.07)', color: '#a78bfa' }}
+        >
+          <svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor">
+            <circle cx="6" cy="4" r="2.5"/>
+            <path d="M1.5 10.5c0-2.485 2.015-4.5 4.5-4.5s4.5 2.015 4.5 4.5"/>
+          </svg>
+          Created by Ravjoth Brar
+        </a>
       </div>
     </div>
   );

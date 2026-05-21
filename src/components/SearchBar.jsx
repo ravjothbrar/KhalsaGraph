@@ -96,11 +96,11 @@ export default function SearchBar() {
   }, []);
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-30 w-full max-w-lg px-4">
-      <div className="search-bar rounded-xl overflow-visible" style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.6)' }}>
-        <div className="flex items-center px-4 py-3 gap-3">
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-30 w-full max-w-2xl px-4">
+      <div className="search-bar rounded-2xl overflow-visible" style={{ boxShadow: '0 12px 60px rgba(0,0,0,0.75), 0 0 0 1px rgba(249,115,22,0.2)' }}>
+        <div className="flex items-center px-5 py-4 gap-4">
           {/* Icon: spinning when searching, static otherwise */}
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
             className={status ? 'animate-spin' : ''}
             style={{ color: status ? '#A78BFA' : '#F97316', flexShrink: 0, transition: 'color 0.2s' }}>
             {status
@@ -119,7 +119,8 @@ export default function SearchBar() {
             onKeyDown={handleKeyDown}
             onFocus={() => results.length && setOpen(true)}
             placeholder="Search Gurbani, describe a feeling, or name a raag…"
-            className="flex-1 bg-transparent text-white placeholder-slate-700 outline-none text-sm min-w-0"
+            className="flex-1 bg-transparent text-white placeholder-slate-600 outline-none min-w-0"
+            style={{ fontSize: '0.95rem' }}
           />
 
           {/* Semantic indicator */}
