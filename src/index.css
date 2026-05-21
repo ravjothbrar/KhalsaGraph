@@ -1,18 +1,19 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --bg-deep:    #060B18;
-  --bg-navy:    #0A1628;
-  --bg-mid:     #0F1F38;
+  --bg-deep:    #050A16;
+  --bg-navy:    #080F20;
+  --bg-panel:   #070D1C;
   --accent:     #F97316;
   --accent-dim: #C2530D;
-  --gold:       #FBBF24;
+  --accent-lo:  rgba(249,115,22,0.12);
   --text:       #E8EDF5;
-  --muted:      #5A7090;
-  --border:     rgba(255,255,255,0.07);
+  --muted:      #4A6080;
+  --border-o:   rgba(249,115,22,0.18);  /* orange border */
+  --border-w:   rgba(255,255,255,0.06); /* white border */
 }
 
 * { box-sizing: border-box; }
@@ -28,9 +29,9 @@ html, body {
 }
 
 /* Scrollbar */
-::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: rgba(249,115,22,0.25); border-radius: 2px; }
 
 /* Typography */
 .font-display {
@@ -41,30 +42,28 @@ html, body {
   line-height: 1.8;
 }
 
-/* Glass panels */
+/* ─── Panels ─── */
+/* Solid dark navy — replaces frosted glass */
 .glass {
-  background: rgba(10, 22, 40, 0.75);
-  backdrop-filter: blur(16px) saturate(1.4);
-  -webkit-backdrop-filter: blur(16px) saturate(1.4);
-  border: 1px solid var(--border);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-o);
 }
 
+/* Subtle variant (search results list, dropdowns) */
 .glass-light {
-  background: rgba(15, 31, 56, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(5, 10, 22, 0.98);
+  border: 1px solid var(--border-o);
 }
 
-/* Slide animations */
+/* ─── Slide / fade animations ─── */
 .panel-slide-right {
-  animation: slideRight 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: slideRight 0.24s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .panel-slide-left {
-  animation: slideLeft 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: slideLeft 0.24s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .fade-in {
-  animation: fadeIn 0.4s ease;
+  animation: fadeIn 0.3s ease;
 }
 
 @keyframes slideRight {
@@ -76,116 +75,113 @@ html, body {
   to   { transform: translateX(0);     opacity: 1; }
 }
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-@keyframes pulse-glow {
-  0%, 100% { opacity: 0.6; }
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.4; }
   50%       { opacity: 1; }
 }
+.animate-pulse-slow { animation: pulse-slow 1.6s ease-in-out infinite; }
 
-/* Landing page */
-.landing-gradient {
-  background: radial-gradient(ellipse at 50% 0%, rgba(249,115,22,0.12) 0%, transparent 60%),
-              radial-gradient(ellipse at 0% 100%, rgba(249,115,22,0.06) 0%, transparent 50%),
-              var(--bg-deep);
-}
-
+/* ─── Hero ─── */
 .hero-title {
   font-family: 'DM Serif Display', Georgia, serif;
-  line-height: 1.05;
-  letter-spacing: -0.02em;
+  line-height: 1.03;
+  letter-spacing: -0.025em;
 }
 
-.orange-glow {
-  text-shadow: 0 0 40px rgba(249,115,22,0.4);
+/* ─── Search bar (in-app) ─── */
+.search-bar {
+  background: var(--bg-panel);
+  border: 1.5px solid var(--border-o);
+  transition: border-color 0.15s;
+}
+.search-bar:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(249,115,22,0.08);
 }
 
-.search-hero {
-  background: rgba(10, 22, 40, 0.9);
-  backdrop-filter: blur(20px);
-  border: 1.5px solid rgba(249,115,22,0.25);
-  transition: border-color 0.2s;
-}
-.search-hero:focus-within {
-  border-color: rgba(249,115,22,0.6);
-}
-
+/* ─── Buttons ─── */
 .btn-primary {
   background: var(--accent);
   color: white;
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 0.01em;
-  transition: all 0.2s;
+  transition: all 0.15s;
 }
 .btn-primary:hover {
   background: #EA6C0F;
-  transform: translateY(-1px);
-  box-shadow: 0 8px 24px rgba(249,115,22,0.3);
+  box-shadow: 0 4px 20px rgba(249,115,22,0.35);
 }
 
-.feature-card {
-  background: rgba(15, 31, 56, 0.5);
-  border: 1px solid rgba(255,255,255,0.06);
-  transition: all 0.25s;
+.btn-ghost {
+  background: transparent;
+  border: 1.5px solid var(--border-o);
+  color: var(--accent);
+  font-weight: 500;
+  transition: all 0.15s;
 }
-.feature-card:hover {
-  background: rgba(15, 31, 56, 0.8);
-  border-color: rgba(249,115,22,0.2);
-  transform: translateY(-2px);
+.btn-ghost:hover {
+  background: var(--accent-lo);
 }
 
-/* Markdown styles for AI response */
+/* ─── Nav pill (search mode toggle) ─── */
+.nav-pill {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  background: rgba(5,10,22,0.6);
+  border: 1px solid var(--border-o);
+  border-radius: 8px;
+}
+.nav-pill button {
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  transition: all 0.12s;
+  color: var(--muted);
+  letter-spacing: 0.03em;
+}
+.nav-pill button.active {
+  background: var(--accent);
+  color: white;
+}
+.nav-pill button:hover:not(.active) {
+  color: var(--text);
+  background: rgba(249,115,22,0.08);
+}
+
+/* ─── Markdown (AI response) ─── */
 .markdown-body {
   font-size: 0.875rem;
-  line-height: 1.7;
+  line-height: 1.75;
   color: #CBD5E1;
 }
 .markdown-body h2 {
   font-family: 'Inter', sans-serif;
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--accent);
-  margin: 1.2rem 0 0.4rem;
+  margin: 1.4rem 0 0.5rem;
 }
-.markdown-body p {
-  margin: 0.5rem 0;
-}
-.markdown-body strong {
-  color: #E8EDF5;
-  font-weight: 500;
-}
-.markdown-body em {
-  color: #94A3B8;
-  font-style: italic;
-}
+.markdown-body p { margin: 0.5rem 0; }
+.markdown-body strong { color: #F1F5F9; font-weight: 600; }
+.markdown-body em { color: #94A3B8; font-style: italic; }
 
-/* Nav pill */
-.nav-pill {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid var(--border);
-  border-radius: 0.625rem;
-}
-.nav-pill button {
-  padding: 0.375rem 0.75rem;
-  border-radius: 0.375rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  transition: all 0.15s;
-  color: var(--muted);
-  white-space: nowrap;
-}
-.nav-pill button.active {
-  background: rgba(249,115,22,0.15);
-  color: var(--accent);
-}
-.nav-pill button:hover:not(.active) {
-  color: var(--text);
-  background: rgba(255,255,255,0.05);
+/* ─── Landing overlay gradient ─── */
+.landing-veil {
+  /* Dark left wash fading to transparent right — Cosmograph style */
+  background: linear-gradient(
+    105deg,
+    rgba(5,10,22,0.97) 0%,
+    rgba(5,10,22,0.92) 30%,
+    rgba(5,10,22,0.75) 55%,
+    rgba(5,10,22,0.25) 80%,
+    rgba(5,10,22,0.05) 100%
+  );
 }

@@ -13,8 +13,6 @@ export default function App() {
   const setSettingsOpen = useStore(s => s.setSettingsOpen);
   const settingsOpen = useStore(s => s.settingsOpen);
   const nodes = useStore(s => s.nodes);
-  const textMode = useStore(s => s.textMode);
-  const setTextMode = useStore(s => s.setTextMode);
 
   const [loadError, setLoadError] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -41,33 +39,36 @@ export default function App() {
   }, [setGraphData]);
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden" style={{ background: '#060B18' }}>
-      {/* Graph always renders (dimmed on landing) */}
+    <div className="relative w-screen h-screen overflow-hidden" style={{ background: '#050A16' }}>
+      {/* Graph always present — opacity controlled by dimmed prop */}
       <Graph dimmed={!showApp} />
 
-      {/* Loading overlay */}
+      {/* Loading */}
       {loading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: '#060B18' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: '#050A16' }}>
           <div className="text-center">
-            <div className="text-accent text-3xl mb-4 animate-pulse-slow">✦</div>
-            <div className="text-slate-500 text-sm">Loading KhalsaGraph…</div>
+            <img src="/KhalsaGraph/favicon.svg" className="w-10 h-10 mx-auto mb-5 animate-pulse-slow" />
+            <div className="text-slate-600 text-sm tracking-wide">Loading KhalsaGraph…</div>
           </div>
         </div>
       )}
 
       {/* Error */}
       {loadError && !loading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: '#060B18' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: '#050A16' }}>
           <div className="glass rounded-2xl p-8 max-w-sm text-center">
-            <div className="text-accent text-2xl mb-3">⚠</div>
+            <div className="text-accent text-xl mb-3">⚠</div>
             <div className="text-white font-medium mb-2 text-sm">Could not load data</div>
-            <div className="text-slate-400 text-xs mb-4">{loadError}</div>
-            <code className="text-xs bg-white/5 px-2 py-1 rounded text-slate-400">npm run build:data</code>
+            <div className="text-slate-500 text-xs mb-4">{loadError}</div>
+            <code className="text-xs px-2 py-1 rounded text-slate-500"
+              style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.15)' }}>
+              npm run build:data
+            </code>
           </div>
         </div>
       )}
 
-      {/* Landing page */}
+      {/* Landing */}
       {!loading && !showApp && !loadError && (
         <LandingPage onEnter={() => setShowApp(true)} />
       )}
@@ -77,42 +78,29 @@ export default function App() {
         <>
           {/* Top bar */}
           <div className="fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-4 py-3 pointer-events-none">
-            {/* Logo */}
             <button
               onClick={() => setShowApp(false)}
-              className="pointer-events-auto flex items-center gap-2 glass rounded-xl px-3 py-2 hover:bg-white/8 transition-colors"
+              className="pointer-events-auto flex items-center gap-2 px-3 py-2 rounded-lg transition-colors hover:bg-white/5"
+              style={{ border: '1px solid rgba(249,115,22,0.18)', background: 'rgba(5,10,22,0.85)' }}
             >
               <img src="/KhalsaGraph/favicon.svg" alt="" className="w-5 h-5" />
               <span className="text-sm text-slate-400 font-medium hidden sm:block">KhalsaGraph</span>
             </button>
 
-            {/* Search bar (centered, handled by SearchBar component itself) */}
-
-            {/* Right controls */}
             <div className="pointer-events-auto flex items-center gap-2">
-              {/* Text mode toggle */}
-              <div className="nav-pill glass">
-                {[['G', 'gurmukhi'], ['R', 'transliteration'], ['E', 'english']].map(([label, m]) => (
-                  <button key={m} onClick={() => setTextMode(m)} className={textMode === m ? 'active' : ''} title={m}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Creator pill */}
               <a href="https://ravjothbrar.com/" target="_blank" rel="noopener noreferrer"
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all hover:scale-105"
-                style={{ border:'1px solid rgba(139,92,246,0.35)', background:'rgba(139,92,246,0.08)', color:'#a78bfa' }}>
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105"
+                style={{ border: '1.5px solid rgba(139,92,246,0.35)', background: 'rgba(139,92,246,0.08)', color: '#a78bfa' }}>
                 <svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor">
                   <circle cx="6" cy="4" r="2.5"/><path d="M1.5 10.5c0-2.485 2.015-4.5 4.5-4.5s4.5 2.015 4.5 4.5"/>
                 </svg>
                 Ravjoth Brar
               </a>
 
-              {/* Settings */}
               <button
                 onClick={() => setSettingsOpen(!settingsOpen)}
-                className="glass rounded-xl w-9 h-9 flex items-center justify-center text-slate-400 hover:text-white transition-colors text-sm"
+                className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-500 hover:text-accent transition-colors text-sm"
+                style={{ border: '1px solid rgba(249,115,22,0.18)', background: 'rgba(5,10,22,0.85)' }}
                 title="Settings"
               >
                 ⚙
@@ -120,12 +108,12 @@ export default function App() {
             </div>
           </div>
 
-          {/* Search bar */}
           <SearchBar />
 
           {/* Node count */}
           {nodes.length > 0 && (
-            <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-10 text-slate-700 text-xs pointer-events-none">
+            <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-10 text-xs pointer-events-none"
+              style={{ color: 'rgba(249,115,22,0.3)' }}>
               {nodes.length.toLocaleString()} shabads · {new Set(nodes.map(n => n.raag)).size} raags
             </div>
           )}

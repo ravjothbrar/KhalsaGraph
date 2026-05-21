@@ -27,9 +27,22 @@ export const useStore = create((set, get) => ({
   settingsOpen: false,
   setSettingsOpen: (v) => set({ settingsOpen: v }),
 
-  // Text mode
-  textMode: (typeof localStorage !== 'undefined' ? localStorage.getItem('textMode') : null) ?? 'english',
+  // Text mode (for graph canvas labels; SidePanel shows all three always)
+  textMode: (typeof localStorage !== 'undefined' ? localStorage.getItem('textMode') : null) ?? 'gurmukhi',
   setTextMode: (m) => { localStorage.setItem('textMode', m); set({ textMode: m }); },
+
+  // Favourites — persisted as array in localStorage
+  favourites: new Set(
+    typeof localStorage !== 'undefined'
+      ? JSON.parse(localStorage.getItem('favourites') || '[]')
+      : []
+  ),
+  toggleFavourite: (id) => set(s => {
+    const next = new Set(s.favourites);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    localStorage.setItem('favourites', JSON.stringify([...next]));
+    return { favourites: next };
+  }),
 
   // Search
   searchResults: [],

@@ -6,6 +6,8 @@ export default function SettingsPanel() {
   const setOpen = useStore(s => s.setSettingsOpen);
   const physicsEnabled = useStore(s => s.physicsEnabled);
   const setPhysicsEnabled = useStore(s => s.setPhysicsEnabled);
+  const textMode = useStore(s => s.textMode);
+  const setTextMode = useStore(s => s.setTextMode);
 
   const [apiKey, setApiKey] = useState(localStorage.getItem('groqApiKey') || '');
   const [saved, setSaved] = useState(false);
@@ -26,16 +28,41 @@ export default function SettingsPanel() {
 
   if (!open) return null;
 
+  const TEXT_MODES = [
+    { id: 'gurmukhi', label: 'Gurmukhi', desc: 'ਪੰਜਾਬੀ ਲਿਪੀ' },
+    { id: 'transliteration', label: 'Transliteration', desc: 'Romanised Punjabi' },
+    { id: 'english', label: 'English', desc: 'Dr. Sant Singh Khalsa' },
+  ];
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setOpen(false)}>
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-      <div className="relative glass rounded-2xl w-full max-w-sm p-6 shadow-2xl fade-in" onClick={e => e.stopPropagation()}>
+      <div className="absolute inset-0 bg-black/70" />
+      <div className="relative rounded-2xl w-full max-w-sm p-6 shadow-2xl fade-in" onClick={e => e.stopPropagation()}
+        style={{ background: 'rgba(5,10,22,0.99)', border: '1px solid rgba(249,115,22,0.22)', boxShadow: '0 24px 80px rgba(0,0,0,0.8)' }}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-white font-semibold">Settings</h2>
           <button onClick={() => setOpen(false)} className="text-slate-500 hover:text-white w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/5">✕</button>
         </div>
 
-        <div className="space-y-5">
+        <div className="space-y-6">
+          {/* Graph node labels */}
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">Node Labels (on graph canvas)</label>
+            <div className="grid grid-cols-3 gap-1.5">
+              {TEXT_MODES.map(m => (
+                <button key={m.id} onClick={() => setTextMode(m.id)}
+                  className="flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl text-xs transition-all"
+                  style={textMode === m.id
+                    ? { background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.4)', color: '#F97316' }
+                    : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#64748B' }
+                  }>
+                  <span className="font-medium">{m.label}</span>
+                  <span className="text-[10px] opacity-70">{m.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* API key */}
           <div>
             <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">Groq API Key</label>
@@ -67,7 +94,7 @@ export default function SettingsPanel() {
           </div>
 
           {/* Reset */}
-          <div className="pt-3 border-t border-white/5">
+          <div className="pt-2 border-t border-white/5">
             <button onClick={resetAll} onBlur={() => setConfirmReset(false)}
               className={`w-full py-2.5 rounded-xl text-sm transition-colors ${confirmReset ? 'bg-red-600/80 text-white' : 'bg-white/3 hover:bg-red-600/10 text-slate-500 hover:text-red-400 border border-white/6'}`}>
               {confirmReset ? '⚠ Confirm — this clears everything' : 'Reset All Data'}

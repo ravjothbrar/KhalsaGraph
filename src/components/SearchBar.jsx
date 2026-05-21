@@ -10,7 +10,7 @@ export default function SearchBar() {
   const [open, setOpen] = useState(false);
   const [semanticStatus, setSemanticStatus] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState('keyword'); // 'keyword' | 'semantic'
+  const [mode, setMode] = useState('keyword');
 
   const nodes = useStore(s => s.nodes);
   const setSelectedNode = useStore(s => s.setSelectedNode);
@@ -79,18 +79,20 @@ export default function SearchBar() {
 
   return (
     <div className="fixed top-4 left-1/2 -translate-x-1/2 z-30 w-full max-w-lg px-4">
-      <div className="glass rounded-2xl shadow-2xl overflow-visible" style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.5)' }}>
-        <div className="flex items-center px-4 py-3 gap-3">
+      <div className="search-bar rounded-xl shadow-2xl overflow-visible">
+        <div className="flex items-center px-3 py-2.5 gap-2.5">
           {/* Mode toggle */}
           <div className="nav-pill flex-shrink-0">
             <button
               className={mode === 'keyword' ? 'active' : ''}
               onClick={() => { setMode('keyword'); setResults([]); }}
-            >⚡</button>
+              title="Keyword search">⚡
+            </button>
             <button
               className={mode === 'semantic' ? 'active' : ''}
               onClick={() => { setMode('semantic'); setResults([]); }}
-            >✦</button>
+              title="Semantic search">✦
+            </button>
           </div>
 
           <input
@@ -100,14 +102,15 @@ export default function SearchBar() {
             onKeyDown={handleKeyDown}
             onFocus={() => results.length && setOpen(true)}
             placeholder={mode === 'keyword' ? 'Search Gurbani, raag, virtue…' : 'Describe a feeling or concept…'}
-            className="flex-1 bg-transparent text-white placeholder-slate-600 outline-none text-sm min-w-0"
+            className="flex-1 bg-transparent text-white placeholder-slate-700 outline-none text-sm min-w-0"
           />
 
           {mode === 'semantic' && query.trim() && (
             <button
               onClick={() => runSemantic(query)}
               disabled={loading}
-              className="flex-shrink-0 text-xs px-2.5 py-1 rounded-lg bg-accent/15 hover:bg-accent/25 text-accent transition-colors disabled:opacity-40"
+              className="flex-shrink-0 text-xs px-2.5 py-1 rounded-lg font-medium transition-colors disabled:opacity-40"
+              style={{ background: 'rgba(249,115,22,0.15)', color: '#F97316', border: '1px solid rgba(249,115,22,0.25)' }}
             >
               {loading ? '…' : 'Go'}
             </button>
@@ -115,31 +118,41 @@ export default function SearchBar() {
 
           {query && (
             <button onClick={() => { setQuery(''); setResults([]); setOpen(false); }}
-              className="flex-shrink-0 text-slate-600 hover:text-slate-400 text-xs w-4 text-center">✕</button>
+              className="flex-shrink-0 text-slate-700 hover:text-slate-400 text-xs w-4 text-center">✕
+            </button>
           )}
         </div>
 
-        {/* Status */}
+        {/* Semantic status */}
         {semanticStatus && (
-          <div className="px-4 pb-2.5 text-xs text-accent/70 flex items-center gap-2 border-t border-white/5">
+          <div className="px-3 pb-2.5 text-xs flex items-center gap-2 border-t"
+            style={{ color: '#F97316', borderColor: 'rgba(249,115,22,0.12)' }}>
             <span className="inline-block animate-spin">⟳</span> {semanticStatus}
           </div>
         )}
 
         {/* Results */}
         {open && results.length > 0 && (
-          <div className="border-t border-white/5 max-h-64 overflow-y-auto rounded-b-2xl">
+          <div className="border-t max-h-64 overflow-y-auto rounded-b-xl"
+            style={{ borderColor: 'rgba(249,115,22,0.12)' }}>
             {results.map(node => (
               <button key={node.id} onClick={() => handleSelect(node)}
-                className="w-full text-left px-4 py-3 hover:bg-white/5 transition-colors border-b border-white/5 last:border-0">
-                <div className="text-sm text-slate-200 truncate">{node.english}</div>
-                <div className="flex gap-2 mt-1 flex-wrap">
+                className="w-full text-left px-3 py-2.5 transition-colors border-b last:border-0"
+                style={{ borderColor: 'rgba(249,115,22,0.06)' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(249,115,22,0.06)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <div className="text-sm text-slate-300 truncate">{node.english}</div>
+                <div className="flex gap-1.5 mt-1 flex-wrap">
                   <span className="text-xs px-1.5 py-0.5 rounded-full"
-                    style={{ background: getRaagColor(node.raagSlug)+'22', color: getRaagColor(node.raagSlug) }}>
+                    style={{ background: getRaagColor(node.raagSlug) + '20', color: getRaagColor(node.raagSlug) }}>
                     {node.raag}
                   </span>
                   {(node.tags || []).slice(0, 2).map(tag => (
-                    <span key={tag} className="text-xs px-1.5 py-0.5 rounded-full bg-white/5 text-slate-400">{tag}</span>
+                    <span key={tag} className="text-xs px-1.5 py-0.5 rounded-full text-slate-500"
+                      style={{ background: 'rgba(249,115,22,0.06)', border: '1px solid rgba(249,115,22,0.1)' }}>
+                      {tag}
+                    </span>
                   ))}
                 </div>
               </button>
